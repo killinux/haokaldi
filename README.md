@@ -1,0 +1,2 @@
+# haokaldi
+something about kaldi
