@@ -1,0 +1,292 @@
+############ kaldi安装:
+通用的安装参考[url]http://jrmeyer.github.io/asr/2016/01/26/Installing-Kaldi.html[/url]
+
+
+需要python3.7.4
+[code="java"]
+conda create -n kaldi python=3.7.4
+conda activate kaldi
+
+
+ brew install automake sox
+[/code]
+
+
+ MKL安装：
+
+官网下载，注册学生，
+[url]https://registrationcenter-download.intel.com/akdlm/irc_nas/tec/17172/m_mkl_2020.4.301.dmg[/url]
+
+然后去邮箱里链接下载
+
+MKL就安装成功了
+
+git clone https://github.com/kaldi-asr/kaldi
+git branch -a
+git checkout -b 5.4 remotes/origin/5.4
+
+[code="java"]
+cd kaldi/tools
+./extras/check_dependencies.sh
+[/code]
+OK之后
+
+其中Makefile 中的
+[code="java"]tar --exclude '*NONE*html' -xmaf sctk-$(SCTK_GITHASH).tar.gz
+去掉参数a
+改成 tar --exclude '*NONE*html' -xmf sctk-$(SCTK_GITHASH).tar.gz
+[/code]
+
+[code="java"]make [/code]
+不要 make -j8
+
+Warning: IRSTLM is not installed by default anymore. If you need IRSTLM
+Warning: use the script extras/install_irstlm.sh
+All done OK.
+
+
+继续再tools中
+[code="java"]
+./extras/install_irstlm.sh
+[/code]
+
+
+ .././install-sh -c -d '/Users/haoning02/Desktop/iosapp/kaldi/tools/irstlm/include'
+ /usr/bin/install -c -m 644 cmd.h thpool.h dictionary.h gzfilebuf.h htable.h index.h lmContainer.h lmclass.h lmmacro.h lmtable.h lmInterpolation.h mempool.h mfstream.h n_gram.h ngramcache.h ngramtable.h timer.h util.h crc.h interplm.h linearlm.h mdiadapt.h mixture.h normcache.h shiftlm.h cplsa.h cswam.h doc.h '/Users/haoning02/Desktop/iosapp/kaldi/tools/irstlm/include'
+Making install in scripts
+make[2]: Nothing to be done for `install-exec-am'.
+ .././install-sh -c -d '/Users/haoning02/Desktop/iosapp/kaldi/tools/irstlm/bin'
+ /usr/bin/install -c add-start-end.sh build-lm-qsub.sh build-lm.sh rm-start-end.sh split-ngt.sh mdtsel.sh build-sublm.pl goograms2ngrams.pl lm-stat.pl merge-sublm.pl ngram-split.pl sort-lm.pl split-dict.pl plsa.sh '/Users/haoning02/Desktop/iosapp/kaldi/tools/irstlm/bin'
+Making install in doc
+make[2]: Nothing to be done for `install-exec-am'.
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  install-exec-hook
+cd /Users/haoning02/Desktop/iosapp/kaldi/tools/irstlm/ && \
+	  ln -s -n -f lib lib64
+make[2]: Nothing to be done for `install-data-am'.
+***() Installation of IRSTLM finished successfully
+***() Please source the tools/env.sh in your path.sh to enable it
+
+
+在tools下
+cd ../src
+
+[code="java"]
+./configure
+make depend
+make
+[/code]
+
+
+
+########### 基本例子：
+
+cd kaldi/egs/yesno/s5
+
+wget http://www.openslr.org/resources/1/waves_yesno.tar.gz
+tar xvf waves_yesno.tar.gz
+./run.sh
+
+
+
+#################error： 在5.4版本，kaldi/tools 下make报错 
+
+shorten_x.c:325:22: error: implicit declaration of function 'pcm2alaw' is invalid in C99 [-Werror,-Wimplicit-function-declaration]
+                    *writebufp++ = pcm2alaw( ulaw2pcm[data0[i]] );
+
+是sph2pipe_v2.5 的问题
+
+用这个补丁：
+
+https://github.com/kaldi-asr/kaldi/pull/4285/files
+sph2pipe.c加#include <unistd.h>
+
+ulaw.h 加
+uchar pcm2ulaw( short int sample );
+uchar pcm2alaw( short int pcmval );
+
+
+##########error：在5.4版本，kaldi/tools 下make报错  ， sctk-2.4.10 报错
+
+align.c:933:15: error: implicit declaration of function 'getpid' is invalid in C99 [-Werror,-Wimplicit-function-declaration]
+    int pid = getpid();
+
+需要把Makefile中的sctk每次强制解压注释掉
+
+[code]
+.PHONY: sctk
+sctk: sctk-2.4.10-20151007-1312Z.tar.bz2
+#   tar xojf sctk-2.4.10-20151007-1312Z.tar.bz2 || \
+#      tar --exclude '*NONE*html' -xvojf sctk-2.4.10-20151007-1312Z.tar.bz2
+    rm -rf sctk && ln -s sctk-2.4.10 sctk
+[/code]
+
+再修改：
+./sctk-2.4.10/src/sclite/align.c
+加
+#include <unistd.h>
+
+pid_t getpid(void);
+pid_t getppid(void)
+
+#########
+sclite.c:579:15: error: implicit declaration of function 'TEXT_set_lang_prof' is invalid in C99 [-Werror,-Wimplicit-function-declaration]
+                if (!TEXT_set_lang_prof(argv[opt+1]))
+
+在 ./sctk-2.4.10/src/sclite/sctk.h
+
+加
+#include <unistd.h>
+int TEXT_set_lang_prof(char *);
+
+
+sctkUnit.c:1156:6: error: implicit declaration of function 'TEXT_set_lang_prof' is invalid in C99 [-Werror,-Wimplicit-function-declaration]
+     TEXT_set_lang_prof("babel_turkish");
+
+
+./sctk-2.4.10/src/sclite/sctkUnit.c
+
+加
+#include <unistd.h>
+int TEXT_set_lang_prof(char *);
+
+##############
+
+
+
+Showing All Messages
+Undefined symbol: void kaldi::OnlineSilenceWeighting::ComputeCurrentTraceback<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >(kaldi::LatticeFasterOnlineDecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > > const&)
+
+Showing All Messages
+Undefined symbol: void kaldi::OnlineSilenceWeighting::ComputeCurrentTraceback<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >(kaldi::LatticeFasterOnlineDecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > > const&)
+
+
+
+Showing All Messages
+Undefined symbol: kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::GetBestPath(bool, fst::VectorFst<fst::ArcTpl<fst::LatticeWeightTpl<float> >, fst::VectorState<fst::ArcTpl<fst::LatticeWeightTpl<float> >, std::__1::allocator<fst::ArcTpl<fst::LatticeWeightTpl<float> > > > >*) const
+
+
+
+
+git checkout -b 5.4 remotes/origin/5.4
+这个版本不行，编译完的kaldi-ios.a缺少 
+OnlineSilenceWeighting 
+SingleUtteranceNnet3DecoderTpl 
+
+grep -nR SingleUtteranceNnet3DecoderTpl *
+grep -nR g_program_name *
+grep -nR FatalMessageLogger *
+
+
+
+
+git checkout -b reorthonormalize-cleaned   remotes/origin/reorthonormalize-cleaned 不行
+git checkout -b pybind11  remotes/origin/pybind11 不行
+git checkout -b multitree   remotes/origin/multitree 可以？ 没有 g_program_name， 有 SingleUtteranceNnet3DecoderTpl
+git checkout -b new-slurm.pl remotes/origin/kkm/new-slurm.pl  不行  有 SingleUtteranceNnet3DecoderTpl  没有 g_program_name 
+git checkout -b kaldi10 remotes/origin/kaldi10 不行， 没有g_program_name
+git checkout -b revert-4241-cusparse-warnings remotes/origin/revert-4241-cusparse-warnings 不行，没有g_program_name
+git checkout -b cudnn remotes/origin/cudnn 不行 没有  SingleUtteranceNnet3DecoderTpl
+git checkout -b  5.3 remotes/origin/5.3 不行 没有SingleUtteranceNnet3DecoderTpl
+git checkout -b  5.2 remotes/origin/5.2 不行 没有SingleUtteranceNnet3DecoderTpl
+git checkout -b  5.1 remotes/origin/5.1 不行 没有SingleUtteranceNnet3DecoderTpl
+git checkout -b  5.0 remotes/origin/5.0 不行 没有SingleUtteranceNnet3DecoderTpl
+
+
+
+但是这个没有
+
+Showing All Messages
+Undefined symbol: kaldi::g_program_name
+
+Showing All Messages
+Undefined symbol: void kaldi::OnlineSilenceWeighting::ComputeCurrentTraceback<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >(kaldi::LatticeFasterOnlineDecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > > const&)
+
+
+Showing All Messages
+Undefined symbol: kaldi::FatalMessageLogger::FatalMessageLogger(kaldi::LogMessageEnvelope::Severity, char const*, char const*, int)
+
+
+
+所以既要有FatalMessageLogger 又要有 SingleUtteranceNnet3DecoderTpl 的branch还要继续找
+
+
+################################################################
+精简版：
+python3.7.4
+git clone https://github.com/kaldi-asr/kaldi
+git branch -a
+
+
+git checkout -b new-slurm.pl remotes/origin/kkm/new-slurm.pl
+cd kaldi/tools
+
+./extras/check_dependencies.sh
+make
+解决各种不兼容问题，implicit declaration of function ，基本都是引入 #include <unistd.h> 加缺的声明就好了
+
+./extras/install_irstlm.sh
+
+
+cd ../src
+
+./configure
+make depend
+
+如果本地运行用make
+如果编译成ios的库用build-kaldi-ios.sh
+这个脚本里面有make ，会编译成ios能用的kaldi-ios.a
+
+
+build-kaldi-ios.sh 里面的online相关的模型都去掉
+
+只留gmm
+
+#MODULES="ivector nnet2 nnet3 lat lm decoder feat transform gmm hmm tree matrix util base itf cudamatrix fstext"
+MODULES="gmm sgmm2"
+这样不行
+
+make clean
+rm -rf include
+
+./configure
+
+
+
+make depend
+./build-kaldi-ios.sh
+
+
+
+Undefined symbols for architecture arm64:
+  "void kaldi::OnlineSilenceWeighting::ComputeCurrentTraceback<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >(kaldi::LatticeFasterOnlineDecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > > const&)", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::NumFramesDecoded() const", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::LatticeFasterDecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > >, kaldi::decoder::BackpointerToken>::~LatticeFasterDecoderTpl()", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::FinalizeDecoding()", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::AdvanceDecoding()", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::EndpointDetected(kaldi::OnlineEndpointConfig const&)", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::GetLattice(bool, fst::VectorFst<fst::ArcTpl<fst::CompactLatticeWeightTpl<fst::LatticeWeightTpl<float>, int> >, fst::VectorState<fst::ArcTpl<fst::CompactLatticeWeightTpl<fst::LatticeWeightTpl<float>, int> >, std::__1::allocator<fst::ArcTpl<fst::CompactLatticeWeightTpl<fst::LatticeWeightTpl<float>, int> > > > >*) const", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::SingleUtteranceNnet3DecoderTpl(kaldi::LatticeFasterDecoderConfig const&, kaldi::TransitionModel const&, kaldi::nnet3::DecodableNnetSimpleLoopedInfo const&, fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > const&, kaldi::OnlineNnet2FeaturePipeline*)", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::GetBestPath(bool, fst::VectorFst<fst::ArcTpl<fst::LatticeWeightTpl<float> >, fst::VectorState<fst::ArcTpl<fst::LatticeWeightTpl<float> >, std::__1::allocator<fst::ArcTpl<fst::LatticeWeightTpl<float> > > > >*) const", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+ld: symbol(s) not found for architecture arm64
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+
+
+
+
+LatticeFasterOnlineDecoderTpl 没有这个玩意
+
+grep -nR  LatticeFasterOnlineDecoderTpl  *
+
+grep -nR FatalMessageLogger  *
+
+master有   LatticeFasterOnlineDecoderTpl  
+

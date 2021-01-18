@@ -1,0 +1,493 @@
+brew in stall gstreamer
+
+
+http://www.kaldi-asr.org/doc/online_programs.html#gst_plugin_installation
+
+kaldi基本概念： 观测序列，状态，模型
+https://www.jianshu.com/p/ad0bce2fbf5e
+
+
+
+==> Installing gfortran...
+Warning: gcc 10.2.0 is already installed and up-to-date
+To reinstall 10.2.0, run `brew reinstall gcc`
+Warning: Already linked: /usr/local/Cellar/gcc/10.2.0
+To relink:
+  brew unlink gcc && brew link gcc
+
+
+
+
+
+
+
+kaldi原理：
+
+https://www.zhihu.com/question/20398418
+
+
+ctc模型：
+https://blog.csdn.net/zchang81/article/details/76887342
+
+
+
+ios：
+
+
+
+cd kaldi/tools
+./extras/check_dependencies.sh
+生成的Makefile有问题，需要把xmaf 改成xmf，如果包下载有问题，自己下载到当前目录
+
+make
+安装 openfst等 scit等
+
+
+./extras/install_irstlm.sh
+安装语言模型
+
+
+cd ../src
+
+./configure
+
+make depend
+
+
+./build-kaldi-ios.sh
+ 这个脚本里有make
+
+ 生成kaldi-ios.a
+
+
+ ###############
+如果报错：
+ ios building for ios simulator, but the linked framework ‘‘xxxx“ was built for ios 解决
+https://blog.csdn.net/weixin_43387282/article/details/107322318
+
+解决办法：File -》 Workspace Settings -》 Build System改成  Legacy Build System
+
+
+
+
+把刚才编译好的 kaldi-ios.a 考过来
+
+
+cp kaldi-ios.a /Users/haoning02/Desktop/iosapp/trynext/src/asr-ios-local/ASRLocalSDKDemo/ASRLocalSDKDemo
+
+
+
+打开工程的时候打开workspace
+这里面有两个工程，一个pod一个应用
+打开Podfile 如果 需要git下载就删掉
+
+pod install
+
+######错误：
+
+Undefined symbols for architecture x86_64:
+  "_OBJC_CLASS_$_EduLocalSpeechRecognizer", referenced from:
+      objc-class-ref in ViewController.o
+ld: symbol(s) not found for architecture x86_64
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+
+
+
+https://blog.csdn.net/s123x456j789/article/details/89011146
+
+
+####error：
+yes_no run.sh
+
+feat-to-dim: command not found
+
+是因为刚才变异的ios 没有在本地make，相关工具没生成
+cd src
+
+make clean
+make depend
+make
+
+ 之后在去run yes_no
+
+
+  生成final.mdl 是个链接，实际的是40.mdl
+
+
+  cp /Users/haoning02/Desktop/iosapp/trynext/kaldi/egs/yesno/s5/exp/mono0a/40.mdl final.mdl
+
+
+
+
+ld: warning: dylib (/Users/haoning02/Library/Developer/Xcode/DerivedData/ASRLocalSDKDemo-gxlevsvikuiydvbzhjpbskbrbotu/Build/Products/Debug-iphoneos/MJExtension/MJExtension.framework/MJExtension) was built for newer iOS version (12.0) than being linked (10.0)
+
+这个错误直接连手机就行了
+
+
+
+
+#######error：
+Undefined symbols for architecture arm64:
+  "kaldi::g_program_name", referenced from:
+      kaldi::ParseOptions::Read(int, char const* const*) in libASRLocalSDK.a(parse-options.o)
+  "kaldi::DownsampleWaveForm(float, kaldi::VectorBase<float> const&, float, kaldi::Vector<float>*)", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "void kaldi::OnlineSilenceWeighting::ComputeCurrentTraceback<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >(kaldi::LatticeFasterOnlineDecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > > const&)", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+     (maybe you meant: void kaldi::OnlineSilenceWeighting::ComputeCurrentTraceback<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >(kaldi::LatticeFasterOnlineDecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > > const&, bool))
+  "kaldi::FatalMessageLogger::FatalMessageLogger(kaldi::LogMessageEnvelope::Severity, char const*, char const*, int)", referenced from:
+      kaldi::OnlineDecoder::OnlineDecoder(int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::OnlineDecoder::GetWordAlignment(fst::VectorFst<fst::ArcTpl<fst::LatticeWeightTpl<float> >, fst::VectorState<fst::ArcTpl<fst::LatticeWeightTpl<float> >, std::__1::allocator<fst::ArcTpl<fst::LatticeWeightTpl<float> > > > > const&, std::__1::vector<float, std::__1::allocator<float> > const&) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::OnlineDecoder::Words2String(std::__1::vector<int, std::__1::allocator<int> > const&) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::OnlineDecoder::FullFinalResult2Json(kaldi::_FullFinalResult const&) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::OnlineDecoder::ChangeState(kaldi::OnlineDecoder::DecoderState) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::ParseOptions::DisableOption(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&) in libASRLocalSDK.a(parse-options.o)
+      kaldi::ParseOptions::GetArg(int) const in libASRLocalSDK.a(parse-options.o)
+      ...
+  "kaldi::FatalMessageLogger::~FatalMessageLogger()", referenced from:
+      kaldi::OnlineDecoder::OnlineDecoder(int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::OnlineDecoder::GetWordAlignment(fst::VectorFst<fst::ArcTpl<fst::LatticeWeightTpl<float> >, fst::VectorState<fst::ArcTpl<fst::LatticeWeightTpl<float> >, std::__1::allocator<fst::ArcTpl<fst::LatticeWeightTpl<float> > > > > const&, std::__1::vector<float, std::__1::allocator<float> > const&) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::OnlineDecoder::Words2String(std::__1::vector<int, std::__1::allocator<int> > const&) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::OnlineDecoder::FullFinalResult2Json(kaldi::_FullFinalResult const&) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::OnlineDecoder::ChangeState(kaldi::OnlineDecoder::DecoderState) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::ParseOptions::DisableOption(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&) in libASRLocalSDK.a(parse-options.o)
+      kaldi::ParseOptions::GetArg(int) const in libASRLocalSDK.a(parse-options.o)
+      ...
+ld: symbol(s) not found for architecture arm64
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+
+ kaldi git:(master) ✗ grep -nR g_program_name *
+src/util/parse-options.cc:317:    // set global "const char*" g_program_name (name of the program
+
+
+
+
+
+
+
+
+
+
+
+
+###############################  安装5.4 版本的kaldi  不行，似乎kaldi10 这个版本可以 安装问题类似 #################
+
+
+
+grep发现2020版本的kaldi的master没有 FatalMessageLogger 
+git checkout 5.4
+
+这个版本有，但是mac编译有一些问题
+是sph2pipe_v2
+./sph2pipe_v2.5/sph2pipe.c
+
+加
+
+#include <unistd.h>
+########
+ulaw.h 加
+uchar pcm2ulaw( short int sample );
+uchar pcm2alaw( short int pcmval );
+
+
+################################
+sctk中的问题：
+
+需要把Makefile中的sctk每次强制解压注释掉
+
+[code]
+.PHONY: sctk
+sctk: sctk-2.4.10-20151007-1312Z.tar.bz2
+#   tar xojf sctk-2.4.10-20151007-1312Z.tar.bz2 || \
+#      tar --exclude '*NONE*html' -xvojf sctk-2.4.10-20151007-1312Z.tar.bz2
+    rm -rf sctk && ln -s sctk-2.4.10 sctk
+[/code]
+
+
+#######
+./sctk-2.4.10/src/sclite/align.c
+加
+#include <unistd.h>
+
+pid_t getpid(void);
+pid_t getppid(void);
+#########
+在 ./sctk-2.4.10/src/sclite/sctk.h
+
+加
+#include <unistd.h>
+int TEXT_set_lang_prof(char *);
+
+########
+
+./sctk-2.4.10/src/sclite/sctkUnit.c
+
+加
+#include <unistd.h>
+int TEXT_set_lang_prof(char *);
+
+
+
+############# openfst如果下载有问题就下载之后放过来，并注释掉下载 Makefile中
+
+openfst-$(OPENFST_VERSION).tar.gz:
+#   wget -T 10 -t 1 http://www.openfst.org/twiki/pub/FST/FstDownload/openfst-$(OPENFST_VERSION).tar.gz || \
+#   wget -T 10 -t 3 http://www.openslr.org/resources/2/openfst-$(OPENFST_VERSION).tar.gz
+
+或
+openfst-$(OPENFST_VERSION).tar.gz:
+    if [ -d "$(DOWNLOAD_DIR)" ]; then \
+        cp -p "$(DOWNLOAD_DIR)/openfst-$(OPENFST_VERSION).tar.gz" .; \
+    else \
+#       $(WGET) -T 10 -t 1 http://www.openfst.org/twiki/pub/FST/FstDownload/openfst-$(OPENFST_VERSION).tar.gz || \
+#       $(WGET) -T 10 -t 3 https://www.openslr.org/resources/2/openfst-$(OPENFST_VERSION).tar.gz; \
+    fi
+
+
+之后在tools下make
+
+
+之后./extras/install_irstlm.sh
+
+
+
+###########  
+cd ../src
+
+./configure
+
+make depend
+
+
+./build-kaldi-ios.sh
+ 这个脚本里有make
+
+ 生成kaldi-ios.a
+
+ 把kaldi-iso.a
+
+放入ASRLocalSDKDemo后
+
+
+Undefined symbols for architecture arm64:
+  "void kaldi::OnlineSilenceWeighting::ComputeCurrentTraceback<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >(kaldi::LatticeFasterOnlineDecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > > const&)", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::NumFramesDecoded() const", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::LatticeFasterDecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > >, kaldi::decoder::BackpointerToken>::~LatticeFasterDecoderTpl()", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::FinalizeDecoding()", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::AdvanceDecoding()", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::EndpointDetected(kaldi::OnlineEndpointConfig const&)", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::GetLattice(bool, fst::VectorFst<fst::ArcTpl<fst::CompactLatticeWeightTpl<fst::LatticeWeightTpl<float>, int> >, fst::VectorState<fst::ArcTpl<fst::CompactLatticeWeightTpl<fst::LatticeWeightTpl<float>, int> >, std::__1::allocator<fst::ArcTpl<fst::CompactLatticeWeightTpl<fst::LatticeWeightTpl<float>, int> > > > >*) const", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::SingleUtteranceNnet3DecoderTpl(kaldi::LatticeFasterDecoderConfig const&, kaldi::TransitionModel const&, kaldi::nnet3::DecodableNnetSimpleLoopedInfo const&, fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > const&, kaldi::OnlineNnet2FeaturePipeline*)", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "kaldi::SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >::GetBestPath(bool, fst::VectorFst<fst::ArcTpl<fst::LatticeWeightTpl<float> >, fst::VectorState<fst::ArcTpl<fst::LatticeWeightTpl<float> >, std::__1::allocator<fst::ArcTpl<fst::LatticeWeightTpl<float> > > > >*) const", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+ld: symbol(s) not found for architecture arm64
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+
+
+
+发现都是  缺少 LatticeFasterOnlineDecoderTpl
+但是master里面有LatticeFasterOnlineDecoderTpl 
+
+
+
+
+
+
+
+
+
+################
+缺的FatalMessageLogger 在 5.4中 的src/base中
+ 但是5.4 又没有LatticeFasterOnlineDecoderTpl 这个
+
+ 所以还是用master
+ 但是把5.4的base拷贝过来试试
+
+
+ cd kaldi/tools 
+ ./extras/check_dependencies.sh
+ 需要解决tar -xmaf 的问题，去掉a就好了
+
+ make
+
+./extras/install_irstlm.sh
+
+cd ../src
+
+rm -rf base
+
+把5.4的src/base cp过来
+
+grep -nR FatalMessageLogger  * 
+检查base下是否有  只有5.4有这个
+
+grep -nR LatticeFasterOnlineDecoderTpl * 
+检查 LatticeFasterOnlineDecoderTpl 是否有
+
+./configure
+make depend
+
+./build-kaldi-ios.sh
+
+
+ 生成kaldi-ios.a
+
+
+
+
+
+#####
+总结：
+如果编译的时候发现少某个 库
+
+Undefined symbols for architecture arm64
+
+是因为某些源码不在当前的代码里
+
+需要去找到这部分代码，对比版本加入到当前版本的代码里
+
+
+
+base下的
+base/kadi-error.h 
+在master和5.4下有冲突
+
+master是KaldiFatalError 
+5.4是MessageLogger
+
+这部分要改兼容
+因为ios的版本里是MessageLogger
+
+############
+
+210de3e52d20a4cdcac62ca76efc2c096d0d7501
+
+24bef8dcb4c501a59324debcafd9dcd426bfde23
+
+
+
+git log  --pretty=oneline -100 base/kaldi-error.h
+
+git reset --hard 10e9002c8800dbde67592b2232cc06e37620564e
+
+
+
+
+
+
+
+
+
+
+ca53725c9186b50d219710cc37c99c255cc332c7 (HEAD -> master, origin/master, origin/HEAD) [src] Adding TF32 tensor core support (#4416)
+785ecf7f4749519f6a66e8ef0908030dfe9aad69 [src] Set 8 frames per chunk by default in looped decoding (#4411)
+32d9339f0471b12ca8f5f3fac49bc7270dceb881 update recipe for CN-Celeb (#4406)
+1305956cd0387977a4c7b4e068c7135a4a08d3e9 [scripts] Make sure utt-length >= chunk-length when allocating egs for SRE. (#4320)
+7ddc31926100b4f2cf7cdb51d8f556672448b6dc [egs] Updated AMI data split and references (#4405)
+813b73185a18725e4f6021981d17221d6ee23a19 Minor change to error message (#4363)
+
+
+
+Undefined symbols for architecture arm64:
+  "kaldi::DownsampleWaveForm(float, kaldi::VectorBase<float> const&, float, kaldi::Vector<float>*)", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+  "void kaldi::OnlineSilenceWeighting::ComputeCurrentTraceback<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >(kaldi::LatticeFasterOnlineDecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > > const&)", referenced from:
+      kaldi::OnlineDecoder::DecodeSegment(kaldi::AudioState&, int, float) in libASRLocalSDK.a(online-decoder.o)
+     (maybe you meant: void kaldi::OnlineSilenceWeighting::ComputeCurrentTraceback<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > >(kaldi::LatticeFasterOnlineDecoderTpl<fst::Fst<fst::ArcTpl<fst::TropicalWeightTpl<float> > > > const&, bool))
+  "kaldi::FatalMessageLogger::FatalMessageLogger(kaldi::LogMessageEnvelope::Severity, char const*, char const*, int)", referenced from:
+      kaldi::OnlineDecoder::OnlineDecoder(int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::OnlineDecoder::GetWordAlignment(fst::VectorFst<fst::ArcTpl<fst::LatticeWeightTpl<float> >, fst::VectorState<fst::ArcTpl<fst::LatticeWeightTpl<float> >, std::__1::allocator<fst::ArcTpl<fst::LatticeWeightTpl<float> > > > > const&, std::__1::vector<float, std::__1::allocator<float> > const&) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::OnlineDecoder::Words2String(std::__1::vector<int, std::__1::allocator<int> > const&) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::OnlineDecoder::FullFinalResult2Json(kaldi::_FullFinalResult const&) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::OnlineDecoder::ChangeState(kaldi::OnlineDecoder::DecoderState) in libASRLocalSDK.a(online-decoder.o)
+      kaldi::ParseOptions::DisableOption(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&) in libASRLocalSDK.a(parse-options.o)
+      kaldi::ParseOptions::GetArg(int) const in libASRLocalSDK.a(parse-options.o)
+      ...
+ld: symbol(s) not found for architecture arm64
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+
+
+
+
+DownsampleWaveForm 在feat下参考 5.4 解决
+
+
+
+
+
+主要是5.4和master之间的 修改 
+
+
+kaldi10 按时间更符合
+
+
+25f09e8abfd1135ffb56ce52b9b56468db02fb12
+
+
+
+######################
+
+git log -10 base/kaldi-error.cc
+
+
+git reset --hard a51bd964b7919d631ee84e5d5a58076b666d5df2
+这个没有nnet2 应该不是
+grep -nR FatalMessageLogger *
+grep -nR DownsampleWaveForm *
+
+
+这个版本恰好有 FatalMessageLogger
+
+去掉nnet2
+
+
+
+
+05d9a3d5ed6b35b37c4b85e95f3058f25bf18401 这个时间点能对上，2019年1月
+ 这个有nnet2 ，试验一下  这个编译成功了
+
+commit 05d9a3d5ed6b35b37c4b85e95f3058f25bf18401 (HEAD -> kaldi10)
+Author: huangruizhe <eraser567@163.com>
+Date:   Tue Jan 22 21:24:54 2019 -0500
+
+    [egs] Add RESULTS file for the tedlium s5_r3 (release 3) setup (#3003)
+
+
+在target的build path里面找
+在项目"Header Search Paths"设置好头文件路径，因为kaldi都是c++文件，引入的头文件都是带路径，所以这里要设置好
+
+
+gmm-copy --binary=false final.mdl final.mdl.txt
+
+
+##########
+
+基本概念：
+汉明窗
+MFCC filter-bank
+FFT
+DTC
+LPC
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
