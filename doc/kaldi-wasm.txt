@@ -1,0 +1,127 @@
+#########
+需要：
+1.emcc环境，wasm-ld的环境变量
+2.kaldi-wasm需要 
+      kaldi的代码，下载到kaldi-wasm/kaldi目录
+      lapack-wasm 线性代数库的代码，下载到kaldi-wasm/lapack-wasm目录
+
+3.install的时候用到上面
+
+  
+
+#########
+环境变量：
+
+
+export LLVM_ROOT="/usr/local/opt/emscripten/libexec/llvm/bin"
+export BINARYEN_ROOT="/usr/local/opt/binaryen"
+export PATH="$LLVM_ROOT:$BINARYEN_ROOT/bin:$PATH"
+
+
+################
+setup :
+
+#######  https://gitlab.inria.fr/kaldi.web/kaldi-wasm#
+git clone https://gitlab.inria.fr/kaldi.web/kaldi-wasm.git 
+###############
+git clone https://github.com/kaldi-asr/kaldi 
+#####  CLAPACK 是 LAPACK 的 C 语言接口。 LAPACK 的全称是 Linear Algebra PACKage ，是非常著名的线性代数库
+git clone https://gitlab.inria.fr/kaldi.web/clapack-wasm
+
+
+
+############
+##########安装emscripten
+brew install emscripten
+brew install binaryen
+
+
+
+例子：
+http://www.ruanyifeng.com/blog/2017/09/asmjs_emscripten.html
+ec
+hello.cc
+#include <iostream>
+
+int main() {
+  std::cout << "Hello World!" << std::endl;
+}
+
+测试：
+emcc hello.cc -o hello.html
+
+which emcc有可能找不到
+更新系统数据库
+
+sudo /usr/libexec/locate.updatedb
+
+locate emcc
+
+
+########开始安装：
+
+cd kaldi-wasm
+
+./install.sh
+Adding path to wasm-ld from /usr/local
+ERROR: Cannot find wasm-ld in /usr/local
+是缺少emscripten
+
+####
+使用zsh .zshrc 配置alias时报错bad assignment
+环境变量不能有空格
+#####
+继续
+./install.sh
+缺少：CLAPACK
+
+#################
+wasm-ld: error: unknown argument: -flat_namespace
+
+可能是emscripten的安装问题：https://github.com/emscripten-core/emscripten/issues/11764
+
+
+git clone https://github.com/emscripten-core/emsdk.git
+重新安装：
+./emsdk install latest
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

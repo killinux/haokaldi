@@ -471,11 +471,96 @@ gmm-copy --binary=false final.mdl final.mdl.txt
 ##########
 
 基本概念：
-汉明窗
-MFCC filter-bank
-FFT
-DTC
-LPC
+汉明窗 :https://www.cnblogs.com/lxy2017/p/4049124.html
+MFCC filter-bank:
+CMVN 均值方差归一化
+FFT 快速傅里叶变换
+DTC Discrete Cosine Transform 离散余弦变换
+LPC 线性预测系数
+Delta 差分系数 递推
+
+LDA矩阵
+
+CMVN 倒谱均值方差归一化   Cepstral Mean and Variance Normalization
+PDF  Probability Distributsion Function
+
+
+Baum-Welch 算法
+
+#################例子
+解码：https://blog.csdn.net/cj1989111/article/details/88640642
+
+/online-gmm-decode-faster --rt-min=0.5 --rt-max=0.7 --max-active=4000 --beam=12.0 --acoustic-scale=0.0769 ./40.mdl ./graph/HCLG.fst ./graph/words.txt 1:2:3:4:5
+
+
+kaldi/tools/openfst-1.6.7/bin/fstinfo HCLG.fst
+
+
+############error
+./online-audio-source.h:28:10: fatal error: 'portaudio.h' file not found
+
+#brew install portaudio
+#conda install pyaudio
+
+cd tools
+./install_portaudio.sh
+
+cd  kaldi/src/onlinebin
+make
+
+
+
+online-wav-gmm-decode-faster --verbose=1 --rt-min=0.8 --rt-max=0.85 --max-active=4000 --beam=12.0 --acoustic-scale=0.0769 scp:./input.scp ./final.mdl ./graph_tgpr/HCLG.fst ./graph_tgpr/words.txt 1:2:3:4:5 ark,t:./trans.txt ark,t:ali.txt 
+
+
+yesno的采样率是8k的 不能用
+
+
+ kaldi/src/onlinebin/online-wav-gmm-decode-faster.cc
+
+修改
+146       const WaveData &wav_data = reader.Value();
+147     //  if(wav_data.SampFreq() != 16000)
+148     //    KALDI_ERR << "Sampling rates other than 16kHz are not supported!";
+149       int32 num_chan = wav_data.Data().NumRows(), this_chan = channel;
+
+把16k的验证去掉，因为yes_no的例子 是 8k的，但是 还是可以运行的
+
+
+
+ online-wav-gmm-decode-faster --verbose=1 --rt-min=0.8 --rt-max=0.85 --max-active=4000 --beam=12.0 --acoustic-scale=0.0769 scp:./input.scp ./final.mdl ./graph_tgpr/HCLG.fst ./graph_tgpr/words.txt 1:2:3:4:5 ark,t:./trans.txt ark,t:ali.txt
+online-wav-gmm-decode-faster --verbose=1 --rt-min=0.8 --rt-max=0.85 --max-active=4000 --beam=12.0 --acoustic-scale=0.0769 scp:./input.scp ./final.mdl ./graph_tgpr/HCLG.fst ./graph_tgpr/words.txt 1:2:3:4:5 ark,t:./trans.txt ark,t:ali.txt
+File: 0_0_0_0_1_1_1_1
+NO
+
+NO
+
+NO
+
+NO
+
+YES
+
+YES
+
+YES
+
+YES
+
+(kaldi) ➜  mono0a git:(kaldi10) ✗
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
