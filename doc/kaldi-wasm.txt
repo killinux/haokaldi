@@ -7,7 +7,9 @@
 
 3.install的时候用到上面
 
-  
+4.wget 
+
+5。配置npm
 
 #########
 环境变量：
@@ -87,6 +89,136 @@ git clone https://github.com/emscripten-core/emsdk.git
 
 
 
+wasm-ld: error: unknown argument: -flat_namespace
+
+ grep -nR flat_namespace *
+kaldi/tools/openfst-1.6.7/libtool:10163:allow_undefined_flag="\${wl}-flat_namespace \${wl}-undefined \${wl}suppress"
+kaldi/tools/openfst-1.6.7/configure:7841:      _lt_dar_allow_undefined='${wl}-flat_namespace ${wl}-undefined ${wl}suppress' ;;
+kaldi/tools/openfst-1.6.7/configure:7850:	  _lt_dar_allow_undefined='${wl}-flat_namespace ${wl}-undefined ${wl}suppress' ;;
+kaldi/tools/openfst-1.6.7/config.status:711:allow_undefined_flag_CXX='${wl}-flat_namespace ${wl}-undefined ${wl}suppress'
+
+
+
+
+https://gcc.gnu.org/pipermail/gcc-patches/2020-November/559963.html
+
+#########
+有的下载超级慢，
+需要自己wget下来放到 zips/  目录下
+但是还要改个地方，这样就不重新下载了
+
+
+emsdk.py 里面修改
+
+1403   #download_even_if_exists = True
+1404   download_even_if_exists = False
+
+中间npm install google-closure-compiler-osx 特别慢 
+
+npm config get registry
+https://registry.npmjs.org/
+
+npm info express
+
+
+
+npm config set registry https://registry.npm.taobao.org
+
+
+修改 ：upstream/emscripten/node_modules/.staging/google-closure-compiler-osx-09125c8f/package.json
+upstream/emscripten/package-lock.json
+
+
+,"_resolved": "https://registry.npmjs.org/google-closure-compiler-osx/-/google-closure-compiler-osx-20200920.0.0.tgz"
+
+为
+
+https://registry.npm.taobao.org/google-closure-compiler-osx/-/google-closure-compiler-osx-20200920.0.0.tgz
+
+
+
+
+grep -nR registry.npmjs.org *
+都改成registry.npm.taobao.org
+主要是这里面 ：upstream/emscripten/package-lock.json
+。
+
+
+
+
+###########
+emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 2.0.12
+clang version 12.0.0 (https://github.com/llvm/llvm-project.git 52e240a0721e4120a7143f6f5bab4760d28d48e8)
+Target: wasm32-unknown-emscripten
+Thread model: posix
+InstalledDir: /usr/local/opt/emscripten/libexec/llvm/bin
+
+
+source "/opt/emscripten/emsdk/emsdk_env.sh"
+
+
+ emcc -v
+emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 2.0.12
+clang version 12.0.0 (/opt/s/w/ir/cache/git/chromium.googlesource.com-external-github.com-llvm-llvm--project 52e240a0721e4120a7143f6f5bab4760d28d48e8)
+Target: wasm32-unknown-emscripten
+Thread model: posix
+InstalledDir: /opt/emscripten/emsdk/upstream/bin
+
+
+brew remove emscripten
+
+brew remove binaryen
+
+
+
+##########
+
+em++: warning: generating an executable with an object extension (.dylib).  If you meant to build an object file please use `-c, `-r`, or `-shared` [-Wemcc]
+wasm-ld: error: unknown argument: -flat_namespace
+em++: error: '/opt/emscripten/emsdk/upstream/bin/wasm-ld -o .libs/libfst.10.wasm -flat_namespace -undefined suppress .libs/libfst.10.dylib-master.o -L/opt/emscripten/emsdk/upstream/emscripten/system/local/lib -L/opt/emscripten/emsdk/upstream/emscripten/system/lib -L/opt/emscripten/emsdk/upstream/emscripten/cache/wasm /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libc.a /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libcompiler_rt.a /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libc++-noexcept.a /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libc++abi-noexcept.a /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libdlmalloc.a /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libc_rt_wasm.a /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libsockets.a -mllvm -combiner-global-alias-analysis=false -mllvm -enable-emscripten-sjlj -mllvm -disable-lsr --allow-undefined --strip-debug --export-table --export main --export stackSave --export stackRestore --export stackAlloc --export __wasm_call_ctors --export __errno_location --export malloc --export free --export memalign --export memset -z stack-size=5242880 --initial-memory=16777216 --no-entry --max-memory=16777216 --global-base=1024' failed (1)
+make[3]: *** [libfst.la] Error 1
+make[2]: *** [install-recursive] Error 1
+make[1]: *** [install-recursive] Error 1
+make: *** [openfst_compiled] Error 2
+
+
+
+#######
+安装gcc 8
+
+
+
+ brew search gcc
+
+ brew install gcc@8
+
+ ==> Summary
+🍺  /usr/local/Cellar/openblas/0.3.13: 23 files, 120.1MB
+Removing: /usr/local/Cellar/openblas/0.3.10_1... (23 files, 120MB)
+==> Upgrading gcc 10.2.0_2 -> 10.2.0_2
+Removing: /usr/local/Cellar/gcc/10.2.0... (1,463 files, 338.7MB)
+==> Checking for dependents of upgraded formulae...
+==> No broken dependents found!
+==> Caveats
+==> openblas
+openblas is keg-only, which means it was not symlinked into /usr/local,
+because macOS provides BLAS in Accelerate.framework.
+
+For compilers to find openblas you may need to set:
+  export LDFLAGS="-L/usr/local/opt/openblas/lib"
+  export CPPFLAGS="-I/usr/local/opt/openblas/include"
+
+For pkg-config to find openblas you may need to set:
+  export PKG_CONFIG_PATH="/usr/local/opt/openblas/lib/pkgconfig"
+
+
+
+
+
+alias gcc='gcc-8'
+alias cc='gcc-8'
+alias g++='g++-8'
+alias c++='c++-8
 
 
 
@@ -94,27 +226,107 @@ git clone https://github.com/emscripten-core/emsdk.git
 
 
 
+hecking how to run the C++ preprocessor... /opt/emscripten/emsdk/upstream/emscripten/em++ -E
+checking for ld used by /opt/emscripten/emsdk/upstream/emscripten/em++... /opt/emscripten/emsdk/upstream/emscripten/emcc
+checking if the linker (/opt/emscripten/emsdk/upstream/emscripten/emcc) is GNU ld... yes
+em++: error: no input files
+checking whether the /opt/emscripten/emsdk/upstream/emscripten/em++ linker (/opt/emscripten/emsdk/upstream/emscripten/emcc) supports shared libraries... yes
+checking for /opt/emscripten/emsdk/upstream/emscripten/em++ option to produce PIC... -fno-common -DPIC
 
 
 
 
 
+cd kaldi-wasm
+vim kaldi/tools/openfst-1.6.7/libtool
+vim kaldi/tools/openfst-1.6.7/configure
+vim kaldi/tools/openfst-1.6.7/config.status
+711 #allow_undefined_flag_CXX='${wl}-flat_namespace ${wl}-undefined ${wl}suppress'
+ 712 allow_undefined_flag_CXX='${wl}-undefined ${wl}suppress'
+
+vim kaldi/tools/openfst-1.6.7/m4/libtool.m4
+
+
+allow_undefined_flag="\${wl}-flat_namespace \${wl}-undefined \${wl}suppress"
+
+#allow_undefined_flag="\${wl}-flat_namespace \${wl}-undefined \${wl}suppress"
+
+
+wasm-ld似乎不支持 -Wl,-flat_namespace -Wl,-undefined -Wl,suppress 
+
+这个是否有用？
+https://gcc.gnu.org/pipermail/gcc-patches/2020-November/559963.html
 
 
 
 
 
+kaldi-wasm git:(master) ✗ grep -nR flat_namespace *
+kaldi/tools/openfst-1.6.7/libtool:10163:#allow_undefined_flag="\${wl}-flat_namespace \${wl}-undefined \${wl}suppress"
+kaldi/tools/openfst-1.6.7/configure:7841:      #_lt_dar_allow_undefined='${wl}-flat_namespace ${wl}-undefined ${wl}suppress' ;;
+kaldi/tools/openfst-1.6.7/configure:7852:	  #_lt_dar_allow_undefined='${wl}-flat_namespace ${wl}-undefined ${wl}suppress' ;;
+kaldi/tools/openfst-1.6.7/config.status:711:#allow_undefined_flag_CXX='${wl}-flat_namespace ${wl}-undefined ${wl}suppress'
+kaldi/tools/openfst-1.6.7/m4/libtool.m4:1048:     # _lt_dar_allow_undefined='${wl}-flat_namespace ${wl}-undefined ${wl}suppress' ;;
+kaldi/tools/openfst-1.6.7/m4/libtool.m4:1058:	  #_lt_dar_allow_undefined='${wl}-flat_namespace ${wl}-undefined ${wl}suppress' ;;
+grep: kaldi/src/nnet2bin/raw-nnet-init: No such file or directory
+
+
+opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing: line 81: aclocal-1.14: command not found
+WARNING: 'aclocal-1.14' is missing on your system.
+         You should only need it if you modified 'acinclude.m4' or
+         'configure.ac' or m4 files included by 'configure.ac'.
+         The 'aclocal' program is part of the GNU Automake package:
+         <http://www.gnu.org/software/automake>
+         It also requires GNU Autoconf, GNU m4 and Perl in order to run:
+         <http://www.gnu.org/software/autoconf>
+         <http://www.gnu.org/software/m4/>
+         <http://www.perl.org/>
+make[1]: *** [aclocal.m4] Error 127
+make: *** [openfst_compiled] Error 2
+
+
+本机装的是aclocal-1.16
+所以改一下
+
+grep -nR  aclocal-1.14 *
+
+
+ grep -nR  aclocal-1.14 *
+kaldi/tools/openfst-1.6.7/Makefile:199:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/config.status:1010:S["ACLOCAL"]="${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14"
+kaldi/tools/openfst-1.6.7/config.log:750:ACLOCAL='${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14'
+kaldi/tools/openfst-1.6.7/src/test/Makefile:429:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/bin/Makefile:493:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/Makefile:175:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/include/Makefile:258:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/script/Makefile:225:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/extensions/compress/Makefile:223:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/extensions/compact/Makefile:366:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/extensions/lookahead/Makefile:229:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/extensions/python/Makefile:203:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/extensions/Makefile:176:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/extensions/linear/Makefile:249:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/extensions/pdt/Makefile:256:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/extensions/ngram/Makefile:205:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/extensions/special/Makefile:239:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/extensions/const/Makefile:223:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/extensions/far/Makefile:278:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/extensions/mpdt/Makefile:242:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+kaldi/tools/openfst-1.6.7/src/lib/Makefile:199:ACLOCAL = ${SHELL} /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing aclocal-1.14
+grep: kaldi/src/nnet2bin/raw-nnet-init: No such file or directory
 
 
 
 
 
+sed -i ""  "s/aclocal-1.14/aclocal-1.16/g" `grep "aclocal-1.14" -rl  .`
 
 
+sed -i ""  "s/automake-1.14/automake-1.16/g" `grep "automake-1.14" -rl  .`
 
 
-
-
+############
+error: cannot parse the debug map for '.libs/libfst.10.dylib': The file was not recognized as a valid object file
 
 
 
