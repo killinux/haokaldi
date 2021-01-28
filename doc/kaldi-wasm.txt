@@ -1,15 +1,126 @@
 #########
 需要：
-1.emcc环境，wasm-ld的环境变量
+1.emcc环境，wasm-ld的环境变量 
 2.kaldi-wasm需要 
       kaldi的代码，下载到kaldi-wasm/kaldi目录
       lapack-wasm 线性代数库的代码，下载到kaldi-wasm/lapack-wasm目录
 
 3.install的时候用到上面
 
-4.wget 
 
-5。配置npm
+4.wget 
+emsdk安装的时候的zips下 但是每次是覆盖安装，如果网不好会很慢
+
+要修改 emsdk.py
+1403   #download_even_if_exists = True
+1404   download_even_if_exists = False
+
+然后在其他地方wget 相应的包放到zips下就可继续安装了
+
+./emsdk install latest
+
+
+5。激活emsdk 配置npm ,这个把本机自带的node卸载掉
+
+./emsdk activate latest
+source "/opt/emscripten/envemsdk/emsdk/emsdk_env.sh"
+
+使用emcc检查
+
+
+6.
+cd kaldi-wasm
+./install.sh
+#emmake make CFLAGS="-O3" CXXFLAGS="-O3 -s USE_ZLIB=1" LDFLAGS=-O3 openfst
+emmake make CFLAGS="-O0" CXXFLAGS="-O0 -s USE_ZLIB=1 -s STRICT=0" LDFLAGS=-O0 openfst
+
+emcc目前latest默认会加-O2 ，所以尽量指定成-O0 编译，不要去掉，去掉会变默认-O0
+
+使用-s STRICT=0
+否则 会有 EXPORTED_FUNCTION的问题  不行，加了STRICT=0 也不行
+
+
+
+
+
+7.编译openfst的问题：
+kaldi/tools/Makefile
+把
+openfst-$(OPENFST_VERSION): openfst-$(OPENFST_VERSION).tar.gz
+    #tar xozf openfst-$(OPENFST_VERSION).tar.gz
+
+openfst-$(OPENFST_VERSION).tar.gz:
+    if [ -d "$(DOWNLOAD_DIR)" ]; then \
+      cp -p "$(DOWNLOAD_DIR)/openfst-$(OPENFST_VERSION).tar.gz" .; \
+    else \
+#     $(WGET) -nv -T 10 -t 1 http://www.openfst.org/twiki/pub/FST/FstDownload/openfst-$(OPENFST_VERSION).tar.gz || \
+#     $(WGET) -nv -T 10 -t 3 -c https://www.openslr.org/resources/2/openfst-$(OPENFST_VERSION).tar.gz; \
+    fi
+
+注释掉不行就直接删
+
+
+
+mac 11.1版本brew装的automake是1.16
+openfst-1.6.7的automake是1.14
+需要 cd openfst-1.6.7
+
+autoreconf -ivf 
+
+重新生成一下automake相关文件，否则会会报aclocal找不到等错误
+
+
+
+把优化去掉，编译的名字会被优化
+vim configure
+把-O2全去掉
+grep -nR O2 *
+Makefile:76:  openfst_add_CXXFLAGS = -g -O2 -Wa,-mbig-obj
+Makefile:79:  openfst_add_CXXFLAGS = -g -O2 -Wa,-mbig-obj
+Makefile:81:  openfst_add_CXXFLAGS = -g -O2
+extras/travis_script.sh:8:#   CFLAGS="-march=native -O2"
+openfst-1.6.7/configure:3680:    CFLAGS="-g -O2"
+openfst-1.6.7/configure:3686:    CFLAGS="-O2"
+openfst-1.6.7/configure:4393:    CXXFLAGS="-g -O2"
+openfst-1.6.7/configure:4399:    CXXFLAGS="-O2"
+openfst-1.6.7/m4/libtool.m4:7641:      test "x${GCJFLAGS+set}" = xset || GCJFLAGS="-g -O2
+
+
+
+cd kaldi-wasm/kaldi/tools 
+
+sed -i ""  "s/\-O2//g" `grep "\-O2" -rl  .`
+
+因为install 用的这个tool下的Makefile
+所以这个Makefile和openfst1.6.7里的都要改
+
+
+
+wasm-ld可能会有问题，因为em++和gcc的版本不对，会报wasm-ld: error: unknown argument: -flat_namespace 等错误
+本机是gcc8
+就grep -nR gcc3 *
+全都替换成gcc8 
+sed -i ""  "s/gcc3/gcc8/g" `grep "gcc3" -rl  .`
+
+
+8.  EXPORTED_FUNCTIONS问题：
+may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+
+vim install.sh
+-s EXPORT_ALL=1
+#emmake make CFLAGS="-O3" CXXFLAGS="-O3 -s USE_ZLIB=1" LDFLAGS=-O3 openfst
+emmake make CFLAGS="-O0" CXXFLAGS="-O0 -s USE_ZLIB=1 -s EXPORT_ALL=1" LDFLAGS=-O0 openfst
+
+
+
+ 9.奇怪，编译完之后 在openfst中的-O2又出现了
+ 难道是要改 configure.ac才能生效？
+
+https://cloud.tencent.com/developer/ask/102539
+
+
+
+
 
 #########
 环境变量：
@@ -287,7 +398,22 @@ make: *** [openfst_compiled] Error 2
 
 本机装的是aclocal-1.16
 所以改一下
+这样改好一点：
+grep -nR am__api_version *
+tools/openfst-1.6.7/configure:2328:am__api_version='1.14'
+tools/openfst-1.6.7/aclocal.m4
+am__api_version都改成1.16
+这样改不行
 
+https://blog.csdn.net/qq_36782366/article/details/103008423
+
+解决方法：去tools/openfst中运行命令
+
+autoreconf -ivf
+
+
+
+这样改比较麻烦
 grep -nR  aclocal-1.14 *
 
 
@@ -323,10 +449,124 @@ sed -i ""  "s/aclocal-1.14/aclocal-1.16/g" `grep "aclocal-1.14" -rl  .`
 
 
 sed -i ""  "s/automake-1.14/automake-1.16/g" `grep "automake-1.14" -rl  .`
+ 这个方法不好，不用这个
+ 用autoreconf -ivf 
 
+
+
+sed -i ""  "s/gcc3/gcc8/g" `grep "gcc3" -rl  .`
 
 ############
 error: cannot parse the debug map for '.libs/libfst.10.dylib': The file was not recognized as a valid object file
+
+
+
+
+#######
+明天需要清理干净的工程再试验一次
+需要试验一次gcc8的和mac自带gcc4的
+
+有可能类库会有问题
+
+emsdk是gcc4编译的，考虑是否重新编译一次
+
+
+
+版本强对应，kaldi更新的太快了,2021年一月份基本一致。
+kaldi-wasm:
+git log
+commit ccdf531509098ae3eeaf19b708b7db64d01ec09c (HEAD -> master, origin/master, origin/HEAD)
+Merge: e38c239 4a0950f
+Author: HU Mathieu <mathieu.hu@inria.fr>
+Date:   Wed Dec 9 09:13:21 2020 +0100
+
+    Merge branch 'dev/update_kaldi' into 'master'
+
+    Update kaldi with latest version
+
+    See merge request kaldi.web/kaldi-wasm!19
+
+
+
+############ error： 
+warning: __ZN3fst8internal14DenseSymbolMapD1Ev may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+error: undefined symbol: _ZN3fst8internal15SymbolTableImpl4ReadERNSt3__213basic_istreamIcNS2_11char_traitsIcEEEERKNS_22SymbolTableReadOptionsE (referenced by top-level compiled C/C++ code)
+
+ 尝试在install.sh中的
+ emmake的参数里加
+
+-s STRICT=0
+这个不行
+
+
+####### error:
+
+checking for -force_load linker flag... wasm-ld: error: unknown argument: -force_load
+
+
+
+
+checking for otool64... no
+checking for -single_module linker flag... wasm-ld: error: unknown argument: -single_module
+emcc: error: '/opt/emscripten/emsdk/upstream/bin/wasm-ld -o libconftest.wasm -single_module -L/opt/emscripten/emsdk/upstream/emscripten/system/local/lib /var/folders/hz/pg4_71gd5t5d27xjz50gyksm0000gp/T/emscripten_temp_0v8jasga/conftest_0.o -L/opt/emscripten/emsdk/upstream/emscripten/system/lib -L/opt/emscripten/emsdk/upstream/emscripten/cache/wasm /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libc.a /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libcompiler_rt.a /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libc++-noexcept.a /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libc++abi-noexcept.a /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libdlmalloc.a /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libc_rt_wasm.a /opt/emscripten/emsdk/upstream/emscripten/cache/wasm/libsockets.a -mllvm -combiner-global-alias-analysis=false -mllvm -enable-emscripten-sjlj -mllvm -disable-lsr --allow-undefined --strip-debug --export-table --export main --export stackSave --export stackRestore --export stackAlloc --export __wasm_call_ctors --export fflush --export __errno_location -z stack-size=5242880 --initial-memory=16777216 --no-entry --max-memory=16777216 --global-base=1024' failed (1)
+no
+checking for -exported_symbols_list linker flag... no
+checking for -force_load linker flag... wasm-ld: error: unknown argument: -force_load
+
+
+
+
+checking dependency style of /opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++... gcc3
+grep -nR gcc3 *
+kaldi/tools/openfst-1.6.7/src/lib/Makefile:208:CCDEPMODE = depmode=gcc3
+kaldi/tools/openfst-1.6.7/src/lib/Makefile:214:CXXDEPMODE = depmode=gcc3
+
+sed -i ""  "s/gcc3/gcc8/g" `grep "gcc3" -rl  .`
+
+wasm-ld: error 的原因可能是em++对应的gcc的版本不对
+本机是gcc8， 把gcc3改成gcc8就好了
+
+
+
+
+checking for -single_module linker flag... wasm-ld: error: unknown argument: -single_module
+
+checking for -exported_symbols_list linker flag... no
+checking for -force_load linker flag... wasm-ld: error: unknown argument: -force_load
+都是gcc3 不匹配的问题
+
+
+猜测EXPORTED_FUNCTIONS可能是
+_zn3导致找不到函数了
+
+可能是-O2  优化的结果
+
+cd openfst-1.6.7
+grep -nR o2 *
+vim configure
+
+CFLAGS="-g -O2"
+改成 
+CFLAGS="-g"
+
+ CXXFLAGS="-g -O2"
+
+ CXXFLAGS="-g"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
