@@ -1,0 +1,248 @@
+
+
+kaldi-wasm/kaldi/tools
+
+#######
+sed -i ""  "s/gcc3/gcc8/g" `grep "gcc3" -rl  .`
+
+
+########
+/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/missing: line 81: automake-1.14: command not found
+WARNING: 'automake-1.14' is missing on your system.
+         You should only need it if you modified 'Makefile.am' or
+         'configure.ac' or m4 files included by 'configure.ac'.
+         The 'automake' program is part of the GNU Automake package:
+         <http://www.gnu.org/software/automake>
+         It also requires GNU Autoconf, GNU m4 and Perl in order to run:
+         <http://www.gnu.org/software/autoconf>
+         <http://www.gnu.org/software/m4/>
+         <http://www.perl.org/>
+make[1]: *** [Makefile.in] Error 1
+
+
+cd  kaldi-wasm/kaldi/tools/openfst-1.6.7
+autoreconf -ivf
+
+
+
+
+
+
+
+
+name mangling
+
+https://stackoverflow.com/questions/20991893/c-mangling-name-for-use-in-emscripten
+
+
+https://www.cnblogs.com/skynet/archive/2010/07/10/1774964.html
+
+
+############# undefined symbol: _ZNK3fst9FstHeader5WriteERNSt3
+prepare_kaldi_wasm.sh
+新增编译参数-s LINKABLE=1 -s EXPORT_ALL=1 
+  
+
+warning: undefined symbol: _ZNK3fst9FstHeader5WriteERNSt3__213basic_ostreamIcNS1_11char_traitsIcEEEERKNS1_12basic_stringIcS4_NS1_9allocatorIcEEEE (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _ZNK5kaldi12ParseOptions6GetArgEi (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _ZNK5kaldi12ParseOptions7NumArgsEv (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _ZNK5kaldi13MessageLogger10LogMessageEv (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _ZNK5kaldi30OnlineNnet2FeaturePipelineInfo19FrameShiftInSecondsEv (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _ZNK5kaldi30SingleUtteranceNnet3DecoderTplIN3fst3FstINS1_6ArcTplINS1_17TropicalWeightTplIfEEEEEEE10GetLatticeEbPNS1_9VectorFstINS3_INS1_23CompactLatticeWeightTplINS1_16LatticeWeightTplIfEEiEEEENS1_11VectorStateISE_NSt3__29allocatorISE_EEEEEE (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _ZNK5kaldi30SingleUtteranceNnet3DecoderTplIN3fst3FstINS1_6ArcTplINS1_17TropicalWeightTplIfEEEEEEE11GetBestPathEbPNS1_9VectorFstINS3_INS1_16LatticeWeightTplIfEEEENS1_11VectorStateISC_NSt3__29allocatorISC_EEEEEE (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _ZNK5kaldi30SingleUtteranceNnet3DecoderTplIN3fst3FstINS1_6ArcTplINS1_17TropicalWeightTplIfEEEEEEE16NumFramesDecodedEv (referenced by top-level compiled C/C++ code)
+------------ Creating WASM module end------------
+
+
+
+改成EM_OPTS="-s WASM=1 -s MODULARIZE=1 -s ENVIRONMENT='worker' -s BUILD_AS_WORKER=1 \
+         -s EXPORT_NAME='kaldiJS' -s EXTRA_EXPORTED_RUNTIME_METHODS=['FS'] \
+         -s INVOKE_RUN=0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s TOTAL_MEMORY=300MB \
+         -s ALLOW_MEMORY_GROWTH=1 --bind -lidbfs.js"
+
+EM_OPTS="-s WASM=1 -s MODULARIZE=1 -s ENVIRONMENT='worker' -s BUILD_AS_WORKER=1 \
+         -s EXPORT_NAME='kaldiJS' -s EXTRA_EXPORTED_RUNTIME_METHODS=['FS'] \
+         -s INVOKE_RUN=0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s TOTAL_MEMORY=300MB \
+         -s LINKABLE=1 -s EXPORT_ALL=1 \
+         -s ALLOW_MEMORY_GROWTH=1 --bind -lidbfs.js"
+
+
+#PROGRAM=online2-tcp-nnet3-decode-faster-reorganized
+PROGRAM=online2-tcp-nnet3-decode-faster-reorganized.cc
+
+
+#em++ $EM_OPTS -o $WASM_NAME.js $PROGRAM.bc
+#em++ $EM_OPTS -o $WASM_NAME.js $PROGRAM
+em++ -I/opt/emscripten/kaldi-wasm/kaldi/src -I/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/src/include $EM_OPTS -o $WASM_NAME.js $PROGRAM
+
+
+
+
+总结：
+
+emmake make CFLAGS="-O3" CXXFLAGS="-O3 -s USE_ZLIB=1 -s LINKABLE=1 -s EXPORT_ALL=1" LDFLAGS=-O3 openfst
+的错误是
+
+rror: undefined symbol: _ZN3fst8internal14DenseSymbolMapC1Ev (referenced by top-level compiled C/C++ code)
+warning: __ZN3fst8internal14DenseSymbolMapC1Ev may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+error: undefined symbol: _ZN3fst8internal14DenseSymbolMapD1Ev (referenced by top-level compiled C/C++ code)
+warning: __ZN3fst8internal14DenseSymbolMapD1Ev may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+error: undefined symbol: _ZN3fst8internal15SymbolTableImpl4ReadERNSt3__213basic_istreamIcNS2_11char_traitsIcEEEERKNS_22SymbolTableReadOptionsE (referenced by top-level compiled C/C++ code)
+warning: __ZN3fst8internal15SymbolTableImpl4ReadERNSt3__213basic_istreamIcNS2_11char_traitsIcEEEERKNS_22SymbolTableReadOptionsE may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+error: undefined symbol: _ZN3fst9FstHeader4ReadERNSt3__213basic_istreamIcNS1_11char_traitsIcEEEERKNS1_12basic_stringIcS4_NS1_9allocatorIcEEEEb (referenced by top-level compiled C/C++ code)
+warning: __ZN3fst9FstHeader4ReadERNSt3__213basic_istreamIcNS1_11char_traitsIcEEEERKNS1_12basic_stringIcS4_NS1_9allocatorIcEEEEb may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+error: undefined symbol: _ZNK3fst9FstHeader5WriteERNSt3__213basic_ostreamIcNS1_11char_traitsIcEEEERKNS1_12basic_stringIcS4_NS1_9allocatorIcEEEE (referenced by top-level compiled C/C++ code)
+warning: __ZNK3fst9FstHeader5WriteERNSt3__213basic_ostreamIcNS1_11char_traitsIcEEEERKNS1_12basic_stringIcS4_NS1_9allocatorIcEEEE may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+
+两个下划线
+
+https://stackoverflow.com/questions/33190760/export-all-functions-with-emscripten
+-s EXPORT_ALL=1 
+
+
+#########openfst报错
+em++: warning: generating an executable with an object extension (.dylib).  If you meant to build an object file please use `-c, `-r`, or `-shared` [-Wemcc]
+wasm-ld: error: unknown argument: -flat_namespace
+
+是因为
+
+autoreconf -ivf
+
+
+checking for -exported_symbols_list linker flag... no
+
+
+checking for -single_module linker flag... wasm-ld: error: unknown argument: -single_module
+
+
+
+checking for -force_load linker flag... wasm-ld: error: unknown argument: -force_load
+
+
+warning:            __ZNK3fst9FstHeader5WriteERNSt3__213basic_ostreamIcNS1_11char_traitsIcEEEERKNS1_12basic_stringIcS4_NS1_9allocatorIcEEEE may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+EXPORTED_FUNCTIONS=['_ZNK3fst9FstHeader5WriteERNSt3__213basic_ostreamIcNS1_11char_traitsIcEEEERKNS1_12basic_stringIcS4_NS1_9allocatorIcEEEE']
+warning:            __ZNK3fst9FstHeader5WriteERNSt3__213basic_ostreamIcNS1_11char_traitsIcEEEERKNS1_12basic_stringIcS4_NS1_9allocatorIcEEEE may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+
+checking for -exported_symbols_list linker flag... no
+checking for -force_load linker flag... wasm-ld: error: unknown argument: -force_load
+
+
+
+checking for otool64... no
+checking for -single_module linker flag... wasm-ld: error: unknown argument: -single_module
+
+########### linux:em++: warning: ignoring unsupported linker flag: `-rpath` [-Wlinkflags]
+
+ export EMMAKEN_CFLAGS="-s USE_PTHREADS=1"
+https://github.com/emscripten-core/emscripten/issues/9565
+
+这个不行
+
+
+
+
+##########
+
+linux下测一下是否EXPORT_ALL=1起作用,果然起作用了，没有不行的
+会报错：
+/../../include/fst/script/arciterator-class.h:39:7: note: mark 'ArcIteratorClassImpl<Arc>' as 'final' to silence this warning
+class ArcIteratorClassImpl : public ArcIteratorImplBase {
+      ^
+3 warnings generated.
+/bin/sh ../../../libtool  --tag=CXX   --mode=link /opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++  -O2 -s USE_ZLIB=1 -g -O2 -std=c++11  -O2 -o farcompilestrings farcompilestrings.o libfstfarscript.la ../../script/libfstscript.la ../../lib/libfst.la -lm  -ldl
+libtool: link: /opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++ -O2 -s USE_ZLIB=1 -g -O2 -std=c++11 -O2 -o .libs/farcompilestrings farcompilestrings.o  ./.libs/libfstfarscript.so ../../script/.libs/libfstscript.so ../../lib/.libs/libfst.so -lm -ldl -Wl,-rpath -Wl,/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib
+em++: warning: ignoring unsupported linker flag: `-rpath` [-Wlinkflags]
+error: undefined symbol: _ZN3fst8IsSTListERKNSt3__212basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE (referenced by top-level compiled C/C++ code)
+warning: Link with `-s LLD_REPORT_UNDEFINED` to get more information on undefined symbols
+warning: To disable errors for undefined symbols use `-s ERROR_ON_UNDEFINED_SYMBOLS=0`
+warning: __ZN3fst8IsSTListERKNSt3__212basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+error: undefined symbol: _ZN3fst9IsSTTableERKNSt3__212basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE (referenced by top-level compiled C/C++ code)
+warning: __ZN3fst9IsSTTableERKNSt3__212basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+Error: Aborting compilation due to previous errors
+em++: error: '/opt/emscripten/envemsdk/emsdk/node/12.18.1_64bit/bin/node /opt/emscripten/envemsdk/emsdk/upstream/emscripten/src/compiler.js /tmp/tmpwwi1dcmp.txt' failed (1)
+make[4]: *** [farcompilestrings] 错误 1
+make[4]: 离开目录“/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/src/extensions/far”
+make[3]: *** [install-recursive] 错误 1
+make[3]: 离开目录“/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/src/extensions”
+make[2]: *** [install-recursive] 错误 1
+make[2]: 离开目录“/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/src”
+make[1]: *** [install-recursive] 错误 1
+make[1]: 离开目录“/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7”
+make: *** [openfst_compiled] 错误 2
+[root@4c8g210129 kaldi-wasm]#
+
+----------------------------------------------------------------------
+Libraries have been installed in:
+   /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib
+
+If you ever happen to want to link against installed libraries
+in a given directory, LIBDIR, you must either use libtool, and
+specify the full pathname of the library, or use the `-LLIBDIR'
+flag during linking and do at least one of the following:
+   - add LIBDIR to the `LD_LIBRARY_PATH' environment variable
+     during execution
+   - add LIBDIR to the `LD_RUN_PATH' environment variable
+     during linking
+   - use the `-Wl,-rpath -Wl,LIBDIR' linker flag
+   - have your system administrator add LIBDIR to `/etc/ld.so.conf'
+
+See any operating system documentation about shared libraries for
+more information, such as the ld(1) and ld.so(8) manual pages.
+
+###################
+mac下测一下，gcc改成clang之后是否能过
+
+export CC=/usr/bin/clang
+export CXX=/usr/bin/clang++
+这种方式不起作用
+
+在 kaldi-wasm/kaldi/tools/Makefile
+里面改
+#CXX ?= g++
+#CC ?= gcc        # used for sph2pipe
+CXX = /usr/bin/clang++  # Uncomment these lines...
+CC = /usr/bin/clang     # ...to build with Clang.
+
+
+问题：：：：：： em++ 和 gcc/clang的关系，
+
+ argument: -force_load 这种问题似乎是gcc的问题，clang可能能解决
+
+ https://emscripten-discuss.narkive.com/6q5D3QYE/wl-force-load-wl-whole-archive-linker-flags-are-not-working
+还有说用--whole-archive  替代的。？？？？？ 未解决？？？？？？
+
+
+
+
+
+再mac上是link就出问题，不是编译compile的问题
+
+
+
+
+linux:
+libtool: link: /opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++ -O2 -s USE_ZLIB=1 -g -O2 -std=c++11 -O2 -o .libs/fstdisambiguate fstdisambiguate.o fstdisambiguate-main.o  ../script/.libs/libfstscript.so ../lib/.libs/libfst.so -lm -ldl -Wl,-rpath -Wl,/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib
+
+mac:
+libtool: compile:  /opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++ -DHAVE_CONFIG_H -I./../include -fno-exceptions -funsigned-char -O2 -s USE_ZLIB=1 -s LINKABLE=1 -s EXPORT_ALL=1 -g -O2 -std=c++11 -MT minimize.lo -MD -MP -MF .deps/minimize.Tpo -c minimize.cc  -fno-common -DPIC -o .libs/minimize.o
+
+
+checking for otool64... no
+checking for -single_module linker flag... wasm-ld: error: unknown argument: -single_module
+emcc: error: '/opt/emscripten/envemsdk/emsdk/upstream/bin/wasm-ld -o libconftest.wasm -single_module -L/opt/emscripten/envemsdk/emsdk/upstream/emscripten/system/local/lib /var/folders/hz/pg4_71gd5t5d27xjz50gyksm0000gp/T/emscripten_temp_s3d4lyxs/conftest_0.o -L/opt/emscripten/envemsdk/emsdk/upstream/emscripten/system/lib -L/opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libc.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libcompiler_rt.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libc++-noexcept.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libc++abi-noexcept.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libdlmalloc.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libc_rt_wasm.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libsockets.a -mllvm -combiner-global-alias-analysis=false -mllvm -enable-emscripten-sjlj -mllvm -disable-lsr --allow-undefined --strip-debug --export-table --export main --export stackSave --export stackRestore --export stackAlloc --export __wasm_call_ctors --export fflush --export __errno_location -z stack-size=5242880 --initial-memory=16777216 --no-entry --max-memory=16777216 --global-base=1024' failed (1)
+no
+checking for -exported_symbols_list linker flag... no
+checking for -force_load linker flag... wasm-ld: error: unknown argument: -force_load
+emcc: error: '/opt/emscripten/envemsdk/emsdk/upstream/bin/wasm-ld -o conftest.wasm /var/folders/hz/pg4_71gd5t5d27xjz50gyksm0000gp/T/emscripten_temp_6ohsducy/conftest_0.o -L/opt/emscripten/envemsdk/emsdk/upstream/emscripten/system/local/lib -force_load ./libconftest.a -L/opt/emscripten/envemsdk/emsdk/upstream/emscripten/system/lib -L/opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libc.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libcompiler_rt.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libc++-noexcept.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libc++abi-noexcept.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libdlmalloc.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libc_rt_wasm.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libsockets.a -mllvm -combiner-global-alias-analysis=false -mllvm -enable-emscripten-sjlj -mllvm -disable-lsr --allow-undefined --strip-debug --export-table --export main --export stackSave --export stackRestore --export stackAlloc --export __wasm_call_ctors --export fflush --export __errno_location -z stack-size=5242880 --initial-memory=16777216 --no-entry --max-memory=16777216 --global-base=1024' failed (1)
+no
+
+
+
+
+
+
+
+
+
+
+

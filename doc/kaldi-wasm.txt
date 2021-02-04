@@ -109,7 +109,9 @@ may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
 vim install.sh
 -s EXPORT_ALL=1
 #emmake make CFLAGS="-O3" CXXFLAGS="-O3 -s USE_ZLIB=1" LDFLAGS=-O3 openfst
-emmake make CFLAGS="-O0" CXXFLAGS="-O0 -s USE_ZLIB=1 -s EXPORT_ALL=1" LDFLAGS=-O0 openfst
+emmake make CFLAGS="-O0" CXXFLAGS="-O0 -s USE_ZLIB=1 -s LINKABLE=1 -s EXPORT_ALL=1" LDFLAGS=-O0 openfst
+
+https://stackoverflow.com/questions/33190760/export-all-functions-with-emscripten
 
 
 
