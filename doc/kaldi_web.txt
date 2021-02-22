@@ -1,0 +1,50 @@
+#git clone https://gitlab.inria.fr/kaldi.web/kaldi-wasm.git
+
+
+ cd kaldi-wasm 
+ 下载kaldi的代码
+
+
+
+#cp /opt/emscripten/setup/clapack-wasm.tar.gz . 
+  替换clapack-wasm 文件夹
+注释：CLAPACK 是 LAPACK 的 C 语言接口。 LAPACK 的全称是 Linear Algebra PACKage ，是非常著名的线性代数库
+
+#cp /opt/emscripten/setup/kaldi_git.tar.gz .
+
+找到一个commit：031fcb2baa1e4e050935d4d913d8b5070f975c7b
+git reset --hard  031fcb2baa1e4e050935d4d913d8b5070f975c7b
+
+这个Date:   Wed Dec 2 14:07:16 2020 +0800
+的commit日期和kaldi-wasm的相匹配
+
+
+ kaldi的源码替换这里面的kadi文件夹
+注释：需要语音识别的kaldi工程
+
+cd kaldi-wasm/kaldi/tools
+
+cp /opt/emscripten/setup/openfst-1.6.7.tar.gz .
+
+kaldi的环境需要openfst做状态机
+
+
+
+#./install.sh
+
+
+生成
+
+kaldiJS.js  kaldiJS.wasm  resampleTo16bint.js  resampleTo16bint.wasm
+
+到 kaldi-wasm/src/computations 目录下
+
+另外模型文件要下载到
+kaldi-wasm/dummy_serv/public
+下 english_small.zip
+
+
+
+
+
+

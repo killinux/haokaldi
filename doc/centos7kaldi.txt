@@ -178,16 +178,39 @@ vim  webpack.config.js
 
 
 
+##########前端！vim
+
+排查到FS有问题
+
+prepare_kaldi_wasm.sh
+
+这里编译的内容有问题
+
+idbfs.js
+
+https://emscripten.org/docs/api_reference/Filesystem-API.html#filesystem-api-idbfs
+
+需要测试一个-lidbfs.js的例子
+
+ 问题可能是没有export出来FS
 
 
 
+#############
+BABEL Note: The code generator has deoptimised the styling of
+
+.babelrc
+ ,
+    "compact":false
+
+    后面加
 
 
-
-
-
-
-
+############
+FS找不到的问题：未解决
+需要继续看：
+https://github.com/emscripten-core/emscripten/blob/master/src/library_fs.js
+尝试搜索 -s 	=1
 
 
 
