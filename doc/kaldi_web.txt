@@ -771,7 +771,7 @@ warning: undefined symbol: _ZNK5kaldi30SingleUtteranceNnet3Decode
 em++的 尝试三种办法：
 1. -s EXPORT_ALL=1  所有方法全暴露，生成的wasm会特别大
 2.-s ERROR_ON_UNDEFINED_SYMBOLS=0 忽略错误 ，生成的wasm会很小，很多改暴露的问题没暴露出来。
-3.-s DEMANGLE_SUPPORT=1  避免c++的mangling 
+3.-s DEMANGLE_SUPPORT=1  避免c++的mangling  ，参考https://emscripten.org/docs/porting/Debugging.html
 
 
 
@@ -786,6 +786,73 @@ OPENFST_CONFIGURE ?= --enable-static --enable-shared --enable-far \
 
 OPENFST_CONFIGURE ?= --enable-static  --enable-far \
                      --enable-ngram-fsts --enable-lookahead-fsts --with-pic
+
+
+#######
+修改：
+禁用动态库 --disable-shared 
+优化全都改成-O1 否则，就把有些东西优化掉了， 可能，mangling也不能取消了
+
+
+ vim kaldi/tools/Makefile
+OPENFST_CONFIGURE ?= --enable-static --disable-shared  --enable-far \
+                     --enable-ngram-fsts --enable-lookahead-fsts --with-pic
+
+
+ifeq ($(OSTYPE),cygwin)
+  # Note: OSTYPE path is probably dead for latest cygwin64 (installed on 2016/11/11).
+  openfst_add_CXXFLAGS = -g -O2 -Wa,-mbig-obj
+else ifeq ($(OS),Windows_NT)
+  # This new OS path is confirmed working on Windows 10 / Cygwin64.
+  openfst_add_CXXFLAGS = -g -O2 -Wa,-mbig-obj
+else
+  openfst_add_CXXFLAGS = -g -O2
+endif
+
+
+vim install.sh
+emmake make CFLAGS="-O1" CXXFLAGS="-O1 -s USE_ZLIB=1 -s DEMANGLE_SUPPORT=1" LDFLAGS="-O1 -s DEMANGLE_SUPPORT=1" openfst
+
+似乎成功了
+
+
+
+###########
+继续install_kaldi.sh
+
+CXXFLAGS="-O1 -U HAVE_EXECINFO_H -msimd128 -s DEMANGLE_SUPPORT=1"
+LDFLAGS="-O1 -s DEMANGLE_SUPPORT=1"
+
+#emmake make -j $(nproc) online2bin
+emmake make  online2bin
+
+
+
+只有这一个错误了
+ake[1]: 进入目录“/opt/emscripten/workspace/kaldi-wasm/kaldi/src/online2bin”
+/opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++ -std=c++11 -I.. -isystem /opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/include -O1  -Wall -Wno-sign-compare -Wno-unused-local-typedefs -Wno-deprecated-declarations -Winit-self -DKALDI_DOUBLEPRECISION=0 -DHAVE_EXECINFO_H=1 -DHAVE_CXXABI_H -DHAVE_CLAPACK -I../../tools/CLAPACK -msse -msse2 -g -Wno-mismatched-tags -O1 -U HAVE_EXECINFO_H -msimd128 -s DEMANGLE_SUPPORT=1   -c -o online2-wav-gmm-latgen-faster.o online2-wav-gmm-latgen-faster.cc
+/opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++   -rdynamic -O1 -s DEMANGLE_SUPPORT=1   online2-wav-gmm-latgen-faster.o ../online2/kaldi-online2.a ../ivector/kaldi-ivector.a ../nnet3/kaldi-nnet3.a ../chain/kaldi-chain.a ../nnet2/kaldi-nnet2.a ../cudamatrix/kaldi-cudamatrix.a ../decoder/kaldi-decoder.a ../lat/kaldi-lat.a ../fstext/kaldi-fstext.a ../hmm/kaldi-hmm.a ../feat/kaldi-feat.a ../transform/kaldi-transform.a ../gmm/kaldi-gmm.a ../tree/kaldi-tree.a ../util/kaldi-util.a ../matrix/kaldi-matrix.a ../base/kaldi-base.a   /opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib/libfst.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/lapack.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/libcblaswr.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CBLAS/lib/cblas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/f2c_BLAS-3.8.0/blas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/libf2c/libf2c.a -lm  -ldl  -o online2-wav-gmm-latgen-faster
+error: undefined symbol: popen (referenced by top-level compiled C/C++ code)
+warning: Link with `-s LLD_REPORT_UNDEFINED` to get more information on undefined symbols
+warning: To disable errors for undefined symbols use `-s ERROR_ON_UNDEFINED_SYMBOLS=0`
+warning: _popen may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+Error: Aborting compilation due to previous errors
+em++: error: '/opt/emscripten/envemsdk/emsdk/node/12.18.1_64bit/bin/node /opt/emscripten/envemsdk/emsdk/upstream/emscripten/src/compiler.js /tmp/tmpix4wm964.txt' failed (1)
+make[1]: *** [online2-wav-gmm-latgen-faster] 错误 1
+make[1]: 离开目录“/opt/emscripten/workspace/kaldi-wasm/kaldi/src/online2bin”
+make: *** [online2bin] 错误 2
+
+
+
+看来 error: undefined symbol: popen (referenced by top-level compiled C/C++ code)
+
+还是要忽略啊
+
+install_kaldi.sh
+
+CXXFLAGS="-O1 -U HAVE_EXECINFO_H -msimd128 -s DEMANGLE_SUPPORT=1"
+LDFLAGS="-O1 -s DEMANGLE_SUPPORT=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --bind"
+
 
 
 
