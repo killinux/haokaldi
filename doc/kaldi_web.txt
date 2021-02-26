@@ -43,6 +43,769 @@ kaldiJS.js  kaldiJS.wasm  resampleTo16bint.js  resampleTo16bint.wasm
 kaldi-wasm/dummy_serv/public
 下 english_small.zip
 
+可能存在的问题
+#############
+错误1：    找不到符号问题，
+warning: __ZN3fst8internal14DenseSymbolMapC1Ev may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+
+
+echo "----------- Building Openfst -----------"
+cd ./kaldi/tools
+emmake make CFLAGS="-O3" CXXFLAGS="-O3 -s USE_ZLIB=1" LDFLAGS=-O3 openfst
+cd $script_dir
+
+改成：
+emmake make CFLAGS="-O3" CXXFLAGS="-O3 -s USE_ZLIB=1 -s LINKABLE=1 -s EXPORT_ALL=1" LDFLAGS=-O3 openfst
+
+新增 -s LINKABLE=1 -s EXPORT_ALL=1
+
+
+#############
+错误2：
+em++: error: Passing any of -msse, -msse2, -msse3, -mssse3, -msse4.1, -msse4.2, -mavx, -mfpu=neon flags also requires passing -msimd128!
+em++: error: Passing any of -msse, -msse2, -msse3, -mssse3, -msse4.1, -msse4.2, -mavx, -mfpu=neon flags also requires passing -msimd128!
+em++: error: Passing any of -msse, -msse2, -msse3, -mssse3, -msse4.1, -msse4.2, -mavx, -mfpu=neon flags also requires passing -msimd128!
+em++: error: Passing any of -msse, -msse2, -msse3, -mssse3, -msse4.1, -msse4.2, -mavx, -mfpu=neon flags also requires passing -msimd128!
+make[1]: *** [kaldi-math.o] 错误 1
+make[1]: *** 正在等待未完成的任务....
+make[1]: *** [kaldi-error.o] 错误 1
+make[1]: *** [io-funcs.o] 错误 1
+make[1]: *** [kaldi-utils.o] 错误 1
+make[1]: 离开目录“/opt/emscripten/workspace/kaldi-wasm/kaldi/src/base”
+
+
+修改install_kaldi.sh
+
+ORIGIN_DIR=$(pwd)
+CXXFLAGS="-O3 -U HAVE_EXECINFO_H"
+LDFLAGS="-O3"
+
+改成：
+
+#CXXFLAGS="-O3 -msse -msse3  -mssse3 -msse4.1 -msse4.2 -mavx -mfpu=neon  -msimd128 -U HAVE_EXECINFO_H"
+CXXFLAGS="-O3 -s LINKABLE=1 -s EXPORT_ALL=1 -msse -msse3  -mssse3 -msse4.1 -msse4.2 -mavx -mfpu=neon  -msimd128  -U HAVE_EXECINFO_H"
+LDFLAGS="-O3"
+
+这个找不到popen报错
+
+尝试这个，这个能通过
+链接里面加这个
+CXXFLAGS="-O1  -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s LINKABLE=1 -s EXPORT_ALL=1 -msse -msse3  -mssse3 -msse4.1 -msse4.2 -mavx -mfpu=neon  -msimd128  -U HAVE_EXECINFO_H"
+LDFLAGS="-O1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 "
+
+
+
+
+
+https://github.com/emscripten-core/emscripten/issues/7302
+https://stackoverflow.com/questions/55861324/how-to-make-emscripten-to-link-popen
+
+popen 找不到的问题
+
+-s ERROR_ON_UNDEFINED_SYMBOLS=0
+
+这个尝试加到 LDFLAG下  似乎是链接的时候有问题
+还真的是这个问题！！！！！！！
+
+
+
+
+###########错误3： _popen 引用不到的问题   这个问题没解决，绕过去了
+
+/opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++   -rdynamic -O3   online2-wav-gmm-latgen-faster.o ../online2/kaldi-online2.a ../ivector/kaldi-ivector.a ../nnet3/kaldi-nnet3.a ../chain/kaldi-chain.a ../nnet2/kaldi-nnet2.a ../cudamatrix/kaldi-cudamatrix.a ../decoder/kaldi-decoder.a ../lat/kaldi-lat.a ../fstext/kaldi-fstext.a ../hmm/kaldi-hmm.a ../feat/kaldi-feat.a ../transform/kaldi-transform.a ../gmm/kaldi-gmm.a ../tree/kaldi-tree.a ../util/kaldi-util.a ../matrix/kaldi-matrix.a ../base/kaldi-base.a   /opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib/libfst.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/lapack.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/libcblaswr.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CBLAS/lib/cblas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/f2c_BLAS-3.8.0/blas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/libf2c/libf2c.a -lm  -ldl  -o online2-wav-gmm-latgen-faster
+error: undefined symbol: popen (referenced by top-level compiled C/C++ code)
+warning: Link with `-s LLD_REPORT_UNDEFINED` to get more information on undefined symbols
+warning: To disable errors for undefined symbols use `-s ERROR_ON_UNDEFINED_SYMBOLS=0`
+warning: _popen may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+Error: Aborting compilation due to previous errors
+em++: error: '/opt/emscripten/envemsdk/emsdk/node/12.18.1_64bit/bin/node /opt/emscripten/envemsdk/emsdk/upstream/emscripten/src/compiler.js /tmp/tmp4ravtc1m.txt' failed (1)
+make[1]: *** [online2-wav-gmm-latgen-faster] 错误 1
+make[1]: *** 正在等待未完成的任务....
+make[1]: 离开目录“/opt/emscripten/workspace/kaldi-wasm/kaldi/src/online2bin”
+make: *** [online2bin] 错误 2
+
+类似的 问题：https://blog.ngzhian.com/porting-pbrt-to-webassembly.html
+install_kaldi.sh
+把O3改成O2 似乎不是这个问题
+
+
+这个错误是因为最后一句
+#emmake make -j $(nproc) online2bin
+产生的
+尝试
+emmake make  online2bin
+还是不行
+先注释掉吧
+#emmake make -j $(nproc) online2bin
+#emmake make  online2bin
+
+############
+错误4：
+cp: 无法获取"online2-tcp-nnet3-decode-faster-reorganized" 的文件状态(stat): 没有那个文件或目录
+
+修改：prepare_kaldi_wasm.sh
+#PROGRAM=online2-tcp-nnet3-decode-faster-reorganized
+PROGRAM=online2-tcp-nnet3-decode-faster-reorganized.cc
+
+
+
+########
+错误5：
+warning: undefined symbol: _ZNK5kaldi30SingleUtteranceNnet3DecoderTplIN3fst3FstINS1_6ArcTplINS1_17TropicalWeightTplIfEEEEEEE16NumFramesDecodedEv (referenced by top-level compiled C/C++ code)
+------- Building sample rate converter -------
+
+
+
+
+
+EM_OPTS="-s WASM=1 -s MODULARIZE=1 -s ENVIRONMENT='worker' -s BUILD_AS_WORKER=1 \
+         -s EXPORT_NAME='kaldiJS' -s EXTRA_EXPORTED_RUNTIME_METHODS=['FS'] \
+         -s INVOKE_RUN=0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s TOTAL_MEMORY=300MB \
+         -s ALLOW_MEMORY_GROWTH=1 --bind -lidbfs.js"
+
+新增 -s LINKABLE=1 -s EXPORT_ALL=1 \
+
+
+后面的可能不需要
+
+
+EXTRA_EXPORTED_RUNTIME_METHODS=['FS']
+改成
+EXTRA_EXPORTED_RUNTIME_METHODS=['FS','ccall','cwrap']
+
+
+EM_OPTS="-s WASM=1 -s MODULARIZE=1 -s ENVIRONMENT='worker' -s BUILD_AS_WORKER=1 \
+         -s EXPORT_NAME='kaldiJS' -s EXTRA_EXPORTED_RUNTIME_METHODS=['FS','ccall','cwrap'] \
+         -s INVOKE_RUN=0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s TOTAL_MEMORY=300MB \
+         -s LINKABLE=1 -s EXPORT_ALL=1 \
+         -s ALLOW_MEMORY_GROWTH=1 --bind -lidbfs.js"
+
+
+或
+EM_OPTS="-s WASM=1 -s MODULARIZE=1 -s ENVIRONMENT='worker' -s BUILD_AS_WORKER=1 \
+         -s EXPORT_NAME='kaldiJS' -s EXTRA_EXPORTED_RUNTIME_METHODS=['FS','ccall','cwrap'] \
+         -s INVOKE_RUN=0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s TOTAL_MEMORY=300MB \
+         -s LINKABLE=1 -s EXPORT_ALL=1 \
+         -s FORCE_FILESYSTEM=1 -s ALLOW_MEMORY_GROWTH=1 -s ASSERTIONS=0 -s WARN_ON_UNDEFINED_SYMBOLS=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1   \
+         -s ALLOW_MEMORY_GROWTH=1 --bind -lidbfs.js"
+
+
+ 注意：这里引用了idbfs 这里会在 js的FS.mkdir等系统操作上用到
+这里需要再测试........ 可能有问题
+
+这里需要总结一个。。。。idbfs的具体例子
+
+
+下划线问题需要再看
+关注
+Learn-WebAssembly 中的
+WABT – the WebAssembly binary toolkit
+
+
+
+错误6:
+-U HAVE_EXECINFO_H   -c -o kaldi-math.o kaldi-math.cc
+kaldi-math.cc:21:10: fatal error: 'base/kaldi-math.h' file not found
+#include "base/kaldi-math.h"
+         ^~~~~~~~~~~~~~~~~~~
+1 error generated.
+
+在install_kaldi.sh的时候 
+online2bin里面找不到 相应的.h
+
+export CPLUS_INCLUDE_PATH=/opt/emscripten/workspace/kaldi-wasm/kaldi/src:/opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/src/include:$CPLUS_INCLUDE_PATH
+
+
+再通过 install.sh 去执行 install_kaldi.sh就没问题了 
+
+
+
+
+
+#############################################################################
+
+启动前端：
+
+npm install
+
+vim webpack.config.js
+
+module.exports = {
+  devServer: {
+    host: '121.5.59.140',
+    https: true,
+    proxy: {
+      '/models': {
+        target: 'http://121.5.59.140:3000',
+      },
+    },
+  },
+
+  vim package.json
+
+   "scripts": {
+    "start": "(cd dummy_serv && node server.js) & webpack-dev-server --host 0.0.0.0 --open",
+
+
+
+mkdir kaldi-wasm/dummy_serv/public
+模型文件放到这
+
+npm start
+
+
+https://121.5.59.140:8080/
+
+
+Error: command "init" failed: TypeError: Cannot read property 'mkdir' of undefined
+
+
+mkdir 的问题是因为 FS没有加载，需要promise修改
+
+因为目录文件比较复杂，
+mkdirp 
+的问题可能会存在
+
+
+#######注意的问题：
+
+install_kaldi.sh里面：
+把online2bin下的内容全都编译成功后
+
+就生成了
+online2-tcp-nnet3-decode-faster-reorganized
+给
+prepare_kaldi_wasm.sh
+
+用
+
+
+这里面的原理是用em++做链接作用么，用编译好的online2-tcp-nnet3-decode-faster-reorganized ，生成kaldi.wasm
+
+
+
+
+
+
+
+export
+
+
+emcc --show-ports
+可选第三方库，直接安装，例如
+
+
+
+./emsdk list
+
+./emsdk install --build=Release sdk-upstream-master-64bit  binaryen-master-64bit
+
+
+
+
+猜测：是不是binaryen没装全
+emsdk下没找到
+find . -name binaryen-shell
+参考
+https://developer.mozilla.org/zh-CN/docs/WebAssembly/C_to_wasm
+sdk-incoming没有了
+用sdk-upstream-master-64bit 代替
+
+这个没测试完？？？？？？？？？？？？？？？？
+
+
+
+
+
+export CPLUS_INCLUDE_PATH=/opt/emscripten/workspace/kaldi-wasm/kaldi/src:/opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/src/include:$CPLUS_INCLUDE_PATH
+
+
+
+
+需要测试一个--bind -lidbfs.js 的例子
+
+
+
+
+#######
+错误7：wasm-ld: error: duplicate symbol
+
+https://github.com/emscripten-core/emscripten/issues/9638
+
+This script succeeds with 1.38.47, but fails with 1.38.47-upstream, with the following error
+
+
+Mac；
+./emsdk install sdk-fastcomp-1.38.31-64bit
+安装中
+
+./emsdk install  binaryen-tag-1.38.31-64bit 成功
+
+./emsdk install 1.38.47
+安装  成功
+
+./emsdk activate 1.38.47
+
+git clone https://gitlab.inria.fr/kaldi.web/kaldi-wasm.git
+wasm-ld 32的问题
+
+
+./emsdk install 1.40.0
+
+Installing SDK 'sdk-releases-upstream-536568644fd67d53778f6111fdd5f64ad3f4c539-64bit'..
+Skipped installing node-12.18.1-64bit, already installed.
+Skipped installing python-3.7.4-2-64bit, already installed.
+Installing tool 'releases-upstream-536568644fd67d53778f6111fdd5f64ad3f4c539-64bit'..
+Error: Downloading URL 'https://storage.googleapis.com/webassembly/emscripten-releases-builds/mac/536568644fd67d53778f6111fdd5f64ad3f4c539/wasm-binaries.tbz2': <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1076)>
+Warning: Possibly SSL/TLS issue. Update or install Python SSL root certificates (2048-bit or greater) supplied in Python folder or https://pypi.org/project/certifi/ and try again.
+Installation failed!
+
+重新安装证书：
+(kaldi) ➜  emsdk git:(master) ✗ conda install -c conda-forge certifi
+
+重新开个shell界面 就好了
+
+
+./emsdk activate 1.40.0
+
+重新清理编译过的内容
+重新 解压clapack-wasm.tar.gz 
+kaldi_git.tar.gz
+ openfst-1.6.7.tar.gz 放到 kaldi/tools/下
+
+./install.sh
+
+
+
+
+npm install -g webassembly
+
+
+
+
+
+
+
+linux：
+./emsdk install 1.38.47 
+安装中
+
+./emsdk install sdk-fastcomp-1.38.31-64bit 
+安装中，不装了
+
+./emsdk install 1.40.1 安装成功
+
+
+
+#####################
+
+
+
+测试到：emmake make -j clean depend
+
+
+
+#######错误总结：
+
+
+install_kaldi.sh中
+
+
+##########
+CXXFLAGS="-O1 -msse -msse3  -mssse3 -msse4.1 -msse4.2 -mavx -mfpu=neon  -msimd128  -U HAVE_EXECINFO_H"
+LDFLAGS="-O1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 "
+
+这个找不到_popen
+
+############
+CXXFLAGS="-O1 -msse -msse3  -mssse3 -msse4.1 -msse4.2 -mavx -mfpu=neon  -msimd128  -U HAVE_EXECINFO_H"
+LDFLAGS="-O1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s LINKABLE=1 -s EXPORT_ALL=1"
+
+这个
+wasm-ld: error: duplicate symbol: main
+>>> defined in online2-wav-gmm-latgen-faster.o
+
+
+################
+
+CXXFLAGS="-O1 -s LINKABLE=1 -s EXPORT_ALL=1 -msse -msse3  -mssse3 -msse4.1 -msse4.2 -mavx -mfpu=neon  -msimd128  -U HAVE_EXECINFO_H"
+LDFLAGS="-O1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 "
+
+只是报警  在oneline2bin中生成了
+
+
+opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++   -rdynamic -O1 -s ERROR_ON_UNDEFINED_SYMBOLS=0    online2-tcp-nnet3-decode-faster-reorganized.o ../online2/kaldi-online2.a ../ivector/kaldi-ivector.a ../nnet3/kaldi-nnet3.a ../chain/kaldi-chain.a ../nnet2/kaldi-nnet2.a ../cudamatrix/kaldi-cudamatrix.a ../decoder/kaldi-decoder.a ../lat/kaldi-lat.a ../fstext/kaldi-fstext.a ../hmm/kaldi-hmm.a ../feat/kaldi-feat.a ../transform/kaldi-transform.a ../gmm/kaldi-gmm.a ../tree/kaldi-tree.a ../util/kaldi-util.a ../matrix/kaldi-matrix.a ../base/kaldi-base.a   /opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib/libfst.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/lapack.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/libcblaswr.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CBLAS/lib/cblas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/f2c_BLAS-3.8.0/blas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/libf2c/libf2c.a -lm  -ldl  -o online2-tcp-nnet3-decode-faster-reorganized
+warning: undefined symbol: MAIN__ (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _embind_register_class (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _embind_register_class_constructor (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _embind_register_class_function (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_as (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_call_void_method (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_decref (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_get_global (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_get_method_caller (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_get_module_property (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_get_property (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_incref (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_new (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_new_cstring (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_run_destructors (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_take_value (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: popen (referenced by top-level compiled C/C++ code)
+make[1]: 离开目录“/opt/emscripten/workspace/kaldi-wasm/kaldi/src/online2bin”
+------------ Creating WASM module ------------
+./prepare_kaldi_wasm.sh  -------over-----
+-----end----------
+
+
+
+
+修改
+prepare_kaldi_wasm.sh
+#cp $PROGRAM $PROGRAM.bc
+echo "------>>>>em++ $PROGRAM.o -o $PROGRAM.bc ----begin"
+em++ $EM_OPTS  $PROGRAM.o -o $PROGRAM.bc
+echo "------>>>> em++ $PROGRAM.o -o $PROGRAM.bc------end "
+
+参考https://github.com/emscripten-core/emscripten/issues/9638
+
+生成bc文件
+
+但是报错，又是_什么什么找不到
+加这个
+是生成bc的时候报错。所以检查  em++的参数
+
+
+最终在 kaldi-wasm/src下生成computations 就是成功了
+
+
+
+尝试解决生成的js太大的问题，避免使用export_all  测试一下
+
+
+#####################################################################################
+mac下尝试： 1.40 
+只忽略，不link_all 
+
+echo "----------- Building Openfst -----------"
+cd ./kaldi/tools
+emmake make CFLAGS="-O3" CXXFLAGS="-O3 -s USE_ZLIB=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0" LDFLAGS=-O3 openfst
+cd $script_dir
+
+
+用 -s ERROR_ON_UNDEFINED_SYMBOLS=0 替代
+-s LINKABLE=1 -s EXPORT_ALL=1
+
+缩小生成的wasm的大小
+
+
+mac下遇到wasm-ld: error: unknown argument: -flat_namespace
+可能是-O3的问题 ,其实不是
+
+尝试 -O0
+emmake make CFLAGS="-O0" CXXFLAGS="-O0 -s USE_ZLIB=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0" LDFLAGS=-O0 openfst
+
+尝试  重新生成make相关文件
+cd  kaldi-wasm/kaldi/tools/openfst-1.6.7
+autoreconf -ivf
+
+openfst可能会被删除，autoreconf有可能没生效
+修改Makefile
+ 把tar注释掉
+
+
+
+
+
+################################################################################################
+在linux下尝试 1.41
+./emsdk activate 1.40.1
+source "/opt/emscripten/envemsdk/emsdk/emsdk_env.sh"
+
+em++ --version
+
+install.sh
+
+echo "----------- Building Openfst -----------"
+cd ./kaldi/tools
+
+emmake make CFLAGS="-O1" CXXFLAGS="-O1 -s USE_ZLIB=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0" LDFLAGS=-O1 openfst
+
+tools安装正常
+
+尝试install_kaldi
+
+clang-12: warning: argument unused during compilation: '-mfpu=neon' [-Wunused-command-line-argument]
+
+这个参数需要去掉
+
+最终这样
+CXXFLAGS="-O1 -msse -msse3  -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128  -U HAVE_EXECINFO_H"
+LDFLAGS="-O1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 "
+
+还没测试
+
+
+npm start之后
+观察：chrome://indexeddb-internals/#
+
+
+
+DevTools failed to load SourceMap
+参考https://blog.csdn.net/CSND7997/article/details/105812805/
+
+wasm streaming compile failed: CompileError: WebAssembly.instantiateStreaming(): Compiling function #313 failed: Invalid opcode 0xfd (enable with --experimental-wasm-simd
+
+
+--experimental-wasm-simd)
+
+这个似乎是 -msimd128 的问题，把这个去掉，全去掉试试。
+
+https://emscripten.org/docs/porting/simd.html
+
+不行
+全去掉报错
+/opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++ -std=c++11 -I.. -isystem /opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/include -O1  -Wall -Wno-sign-compare -Wno-unused-local-typedefs -Wno-deprecated-declarations -Winit-self -DKALDI_DOUBLEPRECISION=0 -DHAVE_EXECINFO_H=1 -DHAVE_CXXABI_H -DHAVE_CLAPACK -I../../tools/CLAPACK -msse -msse2 -g -Wno-mismatched-tags -O0 -U HAVE_EXECINFO_H   -c -o online2-tcp-nnet3-decode-faster-reorganized.o online2-tcp-nnet3-decode-faster-reorganized.cc
+em++: error: Passing any of -msse, -msse2, -msse3, -mssse3, -msse4.1, -msse4.2, -mavx flags also requires passing -msimd128!
+make[1]: *** [online2-tcp-nnet3-decode-faster-reorganized.o] 错误 1
+
+
+尝试修改：
+
+
+
+
+
+尝试-O0编译
+
+install_kaldi.sh里面：
+CXXFLAGS="-O0 -U HAVE_EXECINFO_H"
+#LDFLAGS="-O1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s LINKABLE=1 -s EXPORT_ALL=1"
+LDFLAGS="-O0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 "
+
+一个可能的问题
+openfst里面自带 -O2
+在外面设置-O0 在编译的时候 两个都存在，是否有问题 ，哪个生效？
+另外，clapack-wasm 是-O3 不匹配是否有问题？
+
+还是统一 -O2吧
+
+CXXFLAGS="-O2 -msse -msse3  -mssse3 -msse4.1 -msse4.2 -mavx -msimd128  -U HAVE_EXECINFO_H"
+LDFLAGS="-O2 -s ERROR_ON_UNDEFINED_SYMBOLS=0 "
+
+尝试没有export_all的时候
+
+/opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++   -rdynamic -O2 -s ERROR_ON_UNDEFINED_SYMBOLS=0    online2-tcp-nnet3-decode-faster-reorganized.o ../online2/kaldi-online2.a ../ivector/kaldi-ivector.a ../nnet3/kaldi-nnet3.a ../chain/kaldi-chain.a ../nnet2/kaldi-nnet2.a ../cudamatrix/kaldi-cudamatrix.a ../decoder/kaldi-decoder.a ../lat/kaldi-lat.a ../fstext/kaldi-fstext.a ../hmm/kaldi-hmm.a ../feat/kaldi-feat.a ../transform/kaldi-transform.a ../gmm/kaldi-gmm.a ../tree/kaldi-tree.a ../util/kaldi-util.a ../matrix/kaldi-matrix.a ../base/kaldi-base.a   /opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib/libfst.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/lapack.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/libcblaswr.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CBLAS/lib/cblas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/f2c_BLAS-3.8.0/blas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/libf2c/libf2c.a -lm  -ldl  -o online2-tcp-nnet3-decode-faster-reorganized
+warning: undefined symbol: MAIN__ (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _embind_register_class (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _embind_register_class_constructor (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _embind_register_class_function (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_as (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_call_void_method (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_decref (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_get_global (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_get_method_caller (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_get_module_property (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_get_property (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_incref (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_new (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_new_cstring (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_run_destructors (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_take_value (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: popen (referenced by top-level compiled C/C++ code)
+make[1]: 离开目录“/opt/emscripten/workspace/kaldi-wasm/kaldi/src/online2bin
+
+
+
+
+install_kaldi.sh
+
+CXXFLAGS="-O2 -s LINKABLE=1 -s EXPORT_ALL=1 -msse -msse3  -mssse3 -msse4.1 -msse4.2 -mavx -msimd128  -U HAVE_EXECINFO_H"
+LDFLAGS="-O2 -s ERROR_ON_UNDEFINED_SYMBOLS=0 "
+
+
+em++: warning: Assuming object file output in the absence of `-c`, based on output filename. Add with `-c` or `-r` to avoid this warning [-Wemcc]
+
+
+
+这个是一样的错误
+
+
+难道还要把export_all放到ld里面
+
+
+CXXFLAGS="-O2  -msse -msse3  -mssse3 -msse4.1 -msse4.2 -mavx -msimd128  -U HAVE_EXECINFO_H"
+LDFLAGS="-O2 -s LINKABLE=1 -s EXPORT_ALL=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 "
+
+这样会报错：
+
+wasm-ld: error: duplicate symbol: xerbla_
+>>> defined in /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/lapack.a(xerbla.o)
+>>> defined in /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CBLAS/lib/cblas.a(xerbla.o)
+
+wasm-ld: error: duplicate symbol: lsame_
+>>> defined in /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/lapack.a(lsame.o)
+>>> defined in /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/f2c_BLAS-3.8.0/blas.a(lsame.o)
+
+wasm-ld: error: duplicate symbol: xerbla_
+>>> defined in /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CBLAS/lib/cblas.a(xerbla.o)
+>>> defined in /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/f2c_BLAS-3.8.0/blas.a(xerbla.o)
+
+wasm-ld: error: duplicate symbol: main
+>>> defined in online2-wav-gmm-latgen-faster.o
+>>> defined in /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/libf2c/libf2c.a(main.o)
+em++: error: '/opt/emscripten/envemsdk/emsdk/upstream/bin/wasm-ld -o /tmp/emscripten_temp_3m9zbf1z/online2-wav-gmm-latgen-faster.wasm --whole-archive online2-wav-gmm-latgen-faster.o -L/opt/emscripten/envemsdk/emsdk/upstream/emscripten/system/local/lib ../online2/kaldi-online2.a -L/opt/emscripten/envemsdk/emsdk/upstream/emscripten/system/lib ../ivector/kaldi-ivector.a -L/opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm ../nnet3/kaldi-nnet3.a ../chain/kaldi-chain.a ../nnet2/kaldi-nnet2.a ../cudamatrix/kaldi-cudamatrix.a ../decoder/kaldi-decoder.a ../lat/kaldi-lat.a ../fstext/kaldi-fstext.a ../hmm/kaldi-hmm.a ../feat/kaldi-feat.a ../transform/kaldi-transform.a ../gmm/kaldi-gmm.a ../tree/kaldi-tree.a ../util/kaldi-util.a ../matrix/kaldi-matrix.a ../base/kaldi-base.a /opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib/libfst.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/lapack.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/libcblaswr.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CBLAS/lib/cblas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/f2c_BLAS-3.8.0/blas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/libf2c/libf2c.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libc.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libcompiler_rt.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libc-wasm.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libc++-noexcept.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libc++abi-noexcept.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libdlmalloc.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libpthread_stub.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libc_rt_wasm.a /opt/emscripten/envemsdk/emsdk/upstream/emscripten/cache/wasm/libsockets.a --no-whole-archive -mllvm -combiner-global-alias-analysis=false -mllvm -enable-emscripten-sjlj -mllvm -disable-lsr --allow-undefined --import-memory --import-table --strip-debug --export-all -z stack-size=5242880 --initial-memory=16777216 --no-entry --max-memory=16777216 --global-base=1024' failed (1)
+make[1]: *** [online2-wav-gmm-latgen-faster] 错误 1
+make[1]: 离开目录“/opt/emscripten/workspace/kaldi-wasm/kaldi/src/online2bin”
+
+
+用O3再来一次
+
+CXXFLAGS="-O3  -msse -msse3  -mssse3 -msse4.1 -msse4.2 -mavx -msimd128  -U HAVE_EXECINFO_H"
+LDFLAGS="-O3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 "
+
+
+
+全都统一  O3试验
+
+
+/bin/sh ../../libtool  --tag=CXX   --mode=link /opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++  -O3 -s USE_ZLIB=1  -g -O2 -std=c++11  -O3 -o fstarcsort fstarcsort.o fstarcsort-main.o ../script/libfstscript.la ../lib/libfst.la -lm  -ldl
+libtool: link: /opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++ -O3 -s USE_ZLIB=1 -g -O2 -std=c++11 -O3 -o .libs/fstarcsort fstarcsort.o fstarcsort-main.o  ../script/.libs/libfstscript.so ../lib/.libs/libfst.so -lm -ldl -Wl,-rpath -Wl,/opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib
+em++: warning: ignoring dynamic library libfstscript.so.10.0.0 because not compiling to JS or HTML, remember to link it when compiling to JS or HTML at the end [-Wemcc]
+em++: warning: ignoring dynamic library libfst.so.10.0.0 because not compiling to JS or HTML, remember to link it when compiling to JS or HTML at the end [-Wemcc]
+em++: warning: ignoring unsupported linker flag: `-rpath` [-Wlinkflags]
+error: undefined symbol: _Z16FailedNewHandlerv (referenced by top-level compiled C/C++ code)
+warning: Link with `-s LLD_REPORT_UNDEFINED` to get more information on undefined symbols
+warning: To disable errors for undefined symbols use `-s ERROR_ON_UNDEFINED_SYMBOLS=0`
+warning: __Z16FailedNewHandlerv may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+error: undefined symbol: _Z8SetFlagsPKcPiPPPcbS0_ (referenced by top-level compiled C/C++ code)
+warning: __Z8SetFlagsPKcPiPPPcbS0_ may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+error: undefined symbol: _Z9ShowUsageb (referenced by top-level compiled C/C++ code)
+warning: __Z9ShowUsageb may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+error: undefined symbol: _ZN3fst6script14GetArcSortTypeERKNSt3__212basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEPNS0_11ArcSortTypeE (referenced by top-level compiled C/C++ code)
+warning: __ZN3fst6script14GetArcSortTypeERKNSt3__212basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEPNS0_11ArcSortTypeE may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+error: undefined symbol: _ZN3fst6script15MutableFstClass4ReadERKNSt3__212basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEEb (referenced by top-level compiled C/C++ code)
+warning: __ZN3fst6script15MutableFstClass4ReadERKNSt3__212basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEEb may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+error: undefined symbol: _ZN3fst6script7ArcSortEPNS0_15MutableFstClassENS0_11ArcSortTypeE (referenced by top-level compiled C/C++ code)
+warning: __ZN3fst6script7ArcSortEPNS0_15MutableFstClassENS0_11ArcSortTypeE may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+Error: Aborting compilation due to previous errors
+em++: error: '/opt/emscripten/envemsdk/emsdk/node/12.18.1_64bit/bin/node /opt/emscripten/envemsdk/emsdk/upstream/emscripten/src/compiler.js /tmp/tmp74ukly6g.txt' failed (1)
+make[3]: *** [fstarcsort] 错误 1
+make[3]: 离开目录“/opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/src/bin”
+make[2]: *** [install-recursive] 错误 1
+make[2]: 离开目录“/opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/src”
+make[1]: *** [install-recursive] 错误 1
+make[1]: 离开目录“/opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7”
+make: *** [openfst_compiled] 错误 2
+
+
+在openfst的时候如果没有all 和
+是链接的时候报错
+
+这样再试试： install.sh
+emmake make CFLAGS="-O3" CXXFLAGS="-O3 -s USE_ZLIB=1 " LDFLAGS="-O3 -s LINKABLE=1 -s EXPORT_ALL=1" openfst
+
+install_kaldi.sh
+CXXFLAGS="-O3  -msse -msse3  -mssse3 -msse4.1 -msse4.2 -mavx -msimd128  -U HAVE_EXECINFO_H"
+LDFLAGS="-O3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 "
+
+还是popen和
+warning: undefined symbol: _embind_register_class (referenced by top-level compiled C/C++ code)
+
+链接的时候出错
+
+尝试加--bind
+https://github.com/emscripten-core/emscripten/issues/9379
+install_kaldi.sh
+CXXFLAGS="-O3  -msse -msse3  -mssse3 -msse4.1 -msse4.2 -mavx -msimd128  -U HAVE_EXECINFO_H"
+LDFLAGS="-O3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --bind"
+
+果然好了
+还剩两个：
+
+/opt/emscripten/envemsdk/emsdk/upstream/emscripten/em++   -rdynamic -O3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --bind   online2-tcp-nnet3-decode-faster-reorganized.o ../online2/kaldi-online2.a ../ivector/kaldi-ivector.a ../nnet3/kaldi-nnet3.a ../chain/kaldi-chain.a ../nnet2/kaldi-nnet2.a ../cudamatrix/kaldi-cudamatrix.a ../decoder/kaldi-decoder.a ../lat/kaldi-lat.a ../fstext/kaldi-fstext.a ../hmm/kaldi-hmm.a ../feat/kaldi-feat.a ../transform/kaldi-transform.a ../gmm/kaldi-gmm.a ../tree/kaldi-tree.a ../util/kaldi-util.a ../matrix/kaldi-matrix.a ../base/kaldi-base.a   /opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib/libfst.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/lapack.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/libcblaswr.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CBLAS/lib/cblas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/f2c_BLAS-3.8.0/blas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/libf2c/libf2c.a -lm  -ldl  -o online2-tcp-nnet3-decode-faster-reorganized
+warning: undefined symbol: MAIN__ (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: popen (referenced by top-level compiled C/C++ code)
+make[1]: 离开目录“/opt/emscripten/workspace/kaldi-wasm/kaldi/src/online2bin”
+------------ Creating WASM module ------------
+
+
+
+浏览器报错 难道是丢了
+加 -msse2
+
+
+CXXFLAGS="-O3 -msse -msse2 -msse3  -mssse3 -msse4.1 -msse4.2 -mavx -msimd128 -s ASSERTIONS=1 -U HAVE_EXECINFO_H "
+LDFLAGS="-O3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --bind"
+
+
+
+必须有128
+CXXFLAGS="-O3 -U HAVE_EXECINFO_H -msimd128"
+LDFLAGS="-O3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --bind"
+
+
+
+em++: warning: Assuming object file output in the absence of `-c`, based on output filename. Add with `-c` or `-r` to avoid this warning [-Wemcc]
+这个似乎可以忽略。。
+
+
+还是浏览器问题
+
+ kaldiJS.js:2023 wasm streaming compile failed: CompileError: WebAssembly.instantiateStreaming(): Compiling function #107 failed: Invalid opcode 0xfd (enable with --experimental-wasm-simd) @+11736
+
+
+
+
+kaldiJS.js:55 warning: build with  -s DEMANGLE_SUPPORT=1  to link in libcxxabi demangling
+
+
+-s DEMANGLE_SUPPORT=1
+
+
+
+
+em++会有问题 编译
+warning: undefined symbol: _ZNK5kaldi30SingleUtteranceNnet3Decode
+
+em++的 尝试三种办法：
+1. -s EXPORT_ALL=1  所有方法全暴露，生成的wasm会特别大
+2.-s ERROR_ON_UNDEFINED_SYMBOLS=0 忽略错误 ，生成的wasm会很小，很多改暴露的问题没暴露出来。
+3.-s DEMANGLE_SUPPORT=1  避免c++的mangling 
+
+
+
+似乎是有动态库就先生成动态库了，em++链接动态库的时候似乎有问题，把动态库编译的地方去掉
+
+
+ vim kaldi/tools/Makefile
+OPENFST_CONFIGURE ?= --enable-static --enable-shared --enable-far \
+                     --enable-ngram-fsts --enable-lookahead-fsts --with-pic
+
+                     去掉动态库
+
+OPENFST_CONFIGURE ?= --enable-static  --enable-far \
+                     --enable-ngram-fsts --enable-lookahead-fsts --with-pic
+
+
+
+
+
+
+
+
+
+#############
+
+测试下划线：npm install -g webassembly
+如果下载有问题，
+
+npm config get registry
+
+ npm config set registry https://registry.npmjs.org/
+
+
+
 
 
 

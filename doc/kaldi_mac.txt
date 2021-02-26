@@ -99,6 +99,9 @@ warning: __ZNK3fst9FstHeader5WriteERNSt3__213basic_ostreamIcNS1_11char_traitsIcE
 https://stackoverflow.com/questions/33190760/export-all-functions-with-emscripten
 -s EXPORT_ALL=1 
 
+这个生成的包太大了，尝试使用 -s ERROR_ON_UNDEFINED_SYMBOLS=0
+ 
+
 
 #########openfst报错
 em++: warning: generating an executable with an object extension (.dylib).  If you meant to build an object file please use `-c, `-r`, or `-shared` [-Wemcc]

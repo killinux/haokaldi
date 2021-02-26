@@ -114,6 +114,8 @@ emmake make CFLAGS="-O0" CXXFLAGS="-O0 -s USE_ZLIB=1 -s LINKABLE=1 -s EXPORT_ALL
 https://stackoverflow.com/questions/33190760/export-all-functions-with-emscripten
 
 
+这个生成的包太大了，尝试使用 -s ERROR_ON_UNDEFINED_SYMBOLS=0 
+
 
  9.奇怪，编译完之后 在openfst中的-O2又出现了
  难道是要改 configure.ac才能生效？

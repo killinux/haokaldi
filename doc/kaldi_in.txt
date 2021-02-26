@@ -1,4 +1,4 @@
-brew in stall gstreamer
+brew install gstreamer
 
 
 http://www.kaldi-asr.org/doc/online_programs.html#gst_plugin_installation

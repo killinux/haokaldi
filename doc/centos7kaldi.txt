@@ -180,7 +180,8 @@ vim  webpack.config.js
 
 ##########前端！vim
 
-排查到FS有问题
+排查到
+有问题
 
 prepare_kaldi_wasm.sh
 
