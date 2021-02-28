@@ -1,0 +1,442 @@
+让外网可以访问,前端修改
+########
+vim package.json
+
+--host 0.0.0.0
+  "scripts": {
+    "start": "(cd dummy_serv && node server.js) & webpack-dev-server --host 0.0.0.0 --open",
+
+
+# vim webpack.config.js
+
+module.exports = {
+  devServer: {
+    host: '112.126.59.150',
+    https: true,
+    proxy: {
+      '/models': {
+        target: 'http://112.126.59.150:3000',
+      },
+    },
+  },
+
+  ######################
+
+
+
+./emsdk install latest
+卡主的问题
+是以为 npm访问国外了
+
+
+export PATH=$PATH:/opt/emscripten/emsdk/node/14.15.5_64bit/bin
+
+
+npm config get registry
+https://registry.npmjs.org/
+
+npm config set registry https://registry.npm.taobao.org
+
+
+
+然后安装就快了
+
+
+
+
+
+make[4]: Entering directory '/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/src/lib'
+ /usr/bin/mkdir -p '/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib'
+ /bin/bash ../../libtool   --mode=install /usr/bin/install -c   libfst.la '/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib'
+libtool: install: /usr/bin/install -c .libs/libfst.so.10.0.0 /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib/libfst.so.10.0.0
+/usr/bin/install: cannot stat '.libs/libfst.so.10.0.0': No such file or directory
+make[4]: *** [Makefile:379: install-libLTLIBRARIES] Error 1
+make[4]: Leaving directory '/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/src/lib'
+make[3]: *** [Makefile:557: install-am] Error 2
+make[3]: Leaving directory '/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/src/lib'
+make[2]: *** [Makefile:358: install-recursive] Error 1
+make[2]: Leaving directory '/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/src'
+make[1]: *** [Makefile:414: install-recursive] Error 1
+make[1]: Leaving directory '/opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7'
+make: *** [Makefile:66: openfst_compiled] Error 2
+
+
+是不是动态库的问题
+尝试
+
+cd kaldi/tools
+vim Makefile
+
+
+OPENFST_CONFIGURE ?= --enable-static --enable-shared --enable-far \
+                     --enable-ngram-fsts --enable-lookahead-fsts --with-pic
+
+改成
+
+
+OPENFST_CONFIGURE ?= --enable-static --disable-shared --enable-far \
+                     --enable-ngram-fsts --enable-lookahead-fsts --with-pic
+
+
+                     
+
+
+
+apt-get install unzip sox subversion
+
+
+
+em++: error: Passing any of -msse, -msse2, -msse3, -mssse3, -msse4.1, -msse4.2, -mavx, -mfpu=neon flags also requires passing -msimd128!
+
+install_kaldi.sh 加
+CXXFLAGS="-O3 -U HAVE_EXECINFO_H -msimd128"
+LDFLAGS="-O3"
+
+
+
+
+
+
+/opt/emscripten/emsdk/upstream/emscripten/em++   -rdynamic -O3   apply-cmvn-online.o ../online2/kaldi-online2.a ../ivector/kaldi-ivector.a ../nnet3/kaldi-nnet3.a ../chain/kaldi-chain.a ../nnet2/kaldi-nnet2.a ../cudamatrix/kaldi-cudamatrix.a ../decoder/kaldi-decoder.a ../lat/kaldi-lat.a ../fstext/kaldi-fstext.a ../hmm/kaldi-hmm.a ../feat/kaldi-feat.a ../transform/kaldi-transform.a ../gmm/kaldi-gmm.a ../tree/kaldi-tree.a ../util/kaldi-util.a ../matrix/kaldi-matrix.a ../base/kaldi-base.a   /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib/libfst.a /opt/emscripten/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/lapack.a /opt/emscripten/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/libcblaswr.a /opt/emscripten/kaldi-wasm/clapack-wasm/CBLAS/lib/cblas.a /opt/emscripten/kaldi-wasm/clapack-wasm/f2c_BLAS-3.8.0/blas.a /opt/emscripten/kaldi-wasm/clapack-wasm/libf2c/libf2c.a -lm  -ldl  -o apply-cmvn-online
+error: undefined symbol: popen (referenced by top-level compiled C/C++ code)
+warning: Link with `-s LLD_REPORT_UNDEFINED` to get more information on undefined symbols
+warning: To disable errors for undefined symbols use `-s ERROR_ON_UNDEFINED_SYMBOLS=0`
+warning: _popen may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+Error: Aborting compilation due to previous errors
+em++: error: '/opt/emscripten/emsdk/node/14.15.5_64bit/bin/node /opt/emscripten/emsdk/upstream/emscripten/src/compiler.js /tmp/tmp659er9u3.txt' failed (1)
+make[1]: *** [<builtin>: online2-wav-gmm-latgen-faster] Error 1
+make[1]: *** Waiting for unfinished jobs....
+error: undefined symbol: popen (referenced by top-level compiled C/C++ code)
+warning: Link with `-s LLD_REPORT_UNDEFINED` to get more information on undefined symbols
+warning: To disable errors for undefined symbols use `-s ERROR_ON_UNDEFINED_SYMBOLS=0`
+warning: _popen may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+Error: Aborting compilation due to previous errors
+em++: error: '/opt/emscripten/emsdk/node/14.15.5_64bit/bin/node /opt/emscripten/emsdk/upstream/emscripten/src/compiler.js /tmp/tmp7eqhgcon.txt' failed (1)
+make[1]: *** [<builtin>: apply-cmvn-online] Error 1
+make[1]: Leaving directory '/opt/emscripten/kaldi-wasm/kaldi/src/online2bin'
+make: *** [Makefile:136: online2bin] Error 2
+
+
+popen还是过不去，还是要加
+
+-s ERROR_ON_UNDEFINED_SYMBOLS=0
+
+
+链接的时候加
+
+
+CXXFLAGS="-O3 -U HAVE_EXECINFO_H -msimd128"
+LDFLAGS="-O3 -s ERROR_ON_UNDEFINED_SYMBOLS=0"
+
+
+
+CXXFLAGS="-O3 -U HAVE_EXECINFO_H -msimd128"
+LDFLAGS="-O3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --bind"
+
+
+
+尝试全加simd
+
+
+CXXFLAGS="-O3 -U HAVE_EXECINFO_H -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128"
+LDFLAGS="-O3 -s ERROR_ON_UNDEFINED_SYMBOLS=0"
+
+不加--bind测试一下
+
+
+
+
+
+
+
+还是报错,再找找问题
+
+如果install_kaldi.sh没有 --bind
+
+warning: undefined symbol: _emval_take_value
+
+尝试加-DEMSCRIPTEN=1
+
+popen 过不去,找找哪里使用了
+
+cd kaldi/src/online2bin
+grep -nR popen *
+
+是不是删掉这两个就行了
+
+
+
+思考:比较一下生成的Kaldi.js的区别  
+
+
+
+
+
+rm online2-wav-nnet2-latgen-faster.cc
+
+rm apply-cmvn-online.cc
+
+rm online2-wav-gmm-latgen-faster.cc
+
+
+warning: Link with `-s LLD_REPORT_UNDEFINED` to get more information on undefined symbols
+warning: To disable errors for undefined symbols use `-s ERROR_ON_UNDEFINED_SYMBOLS=0`
+warning: _popen may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+
+
+popen尝试 
+-s FORCE_FILESYSTEM=1
+
+CXXFLAGS="-O3 -U HAVE_EXECINFO_H -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128 -s EXPORTED_FUNCTIONS=['_popen','_main'] -s FORCE_FILESYSTEM=1"
+LDFLAGS="-O3 -s EXPORTED_FUNCTIONS=['_popen','_main']"
+
+
+main问题
+
+https://github.com/emscripten-core/emscripten/issues/11939
+
+-s STANDALONE_WASM 
+-Wno-unused-main
+
+
+error: undefined symbol: popen (referenced by top-level compiled C/C++ code)
+warning: Link with `-s LLD_REPORT_UNDEFINED` to get more information on undefined symbols
+warning: To disable errors for undefined symbols use `-s ERROR_ON_UNDEFINED_SYMBOLS=0`
+warning: _popen may need to be added to EXPORTED_FUNCTIONS if it arrives from a system library
+
+
+
+
+把O1变成O0
+
+kaldi.mk
+CXXFLAGS = -std=c++11 -I.. -isystem $(OPENFSTINC) -O1 $(EXTRA_CXXFLAGS) \
+           -Wall -Wno-sign-compare -Wno-unused-local-typedefs \
+           -Wno-deprecated-declarations -Winit-self \
+           -DKALDI_DOUBLEPRECISION=$(DOUBLE_PRECISION) \
+           -DHAVE_EXECINFO_H=1 -DHAVE_CXXABI_H -DHAVE_CLAPACK -I../../tools/CLAPACK \
+           -msse -msse2  \
+           -g
+
+          改成
+
+CXXFLAGS = -std=c++11 -I.. -isystem $(OPENFSTINC) -O0 $(EXTRA_CXXFLAGS) \
+           -Wall -Wno-sign-compare -Wno-unused-local-typedefs \
+           -Wno-deprecated-declarations -Winit-self \
+           -DKALDI_DOUBLEPRECISION=$(DOUBLE_PRECISION) \
+           -DHAVE_EXECINFO_H=1 -DHAVE_CXXABI_H -DHAVE_CLAPACK -I../../tools/CLAPACK \
+           -msse -msse2  \
+           -g
+
+
+一步一步来
+把install_kaldi.sh
+中的configure   注释掉
+
+修改kaldi.mk到-O0  这个是关键啊
+后
+再make depend等
+
+
+把DEBUG_LEVEL=1
+改成
+DEBUG_LEVEL=2
+
+rdynamic
+
+
+
+
+
+
+会不会和rdynamic  这个有关系？？？
+
+
+
+CXXFLAGS="-O0 -U HAVE_EXECINFO_H -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128 -s LLD_REPORT_UNDEFINED=1"
+LDFLAGS="-O0 -s ERROR_ON_UNDEFINED_SYMBOLS=0"
+
+
+warning: undefined symbol: MAIN__ (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _embind_register_class (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _embind_register_class_constructor (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _embind_register_class_function (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_as (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_call_void_method (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_decref (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_get_global (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_get_method_caller (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_get_module_property (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_get_property (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_incref (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_new (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_new_cstring (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_run_destructors (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: _emval_take_value (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: popen (referenced by top-level compiled C/C++ code)
+make[1]: 离开目录“/opt/emscripten/workspace/kaldi-wasm/kaldi/src/online2bin”
+
+
+
+加bind和main
+
+debug=2似乎是绕不过  错误
+
+
+-s LLD_REPORT_UNDEFINED=1 是不是 和 ERROR_ON_UNDEFINED_SYMBOLS=0 冲突了
+
+
+-s WARN_ON_UNDEFINED_SYMBOLS=1
+
+
+这个能通过
+CXXFLAGS="-O0 -U HAVE_EXECINFO_H -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128"
+LDFLAGS="-O0 -s ERROR_ON_UNDEFINED_SYMBOLS=0  --bind"
+
+再尝试
+
+CXXFLAGS="-O0 -U HAVE_EXECINFO_H -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128"
+LDFLAGS="-O0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_FUNCTIONS=['_main'] --bind"
+
+
+
+
+
+
+centos：
+CXXFLAGS="-O0 -U HAVE_EXECINFO_H -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128 "
+LDFLAGS="-O0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_FUNCTIONS=['_popen','popen','_main'] -s FORCE_FILESYSTEM=1 --bind"
+这个报open错
+
+
+
+CXXFLAGS="-O0 -U HAVE_EXECINFO_H -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128"
+LDFLAGS="-O0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_FUNCTIONS=['popen','MAIN__'] --bind"
+这个不行
+em++: error: undefined exported symbol: "MAIN__" [-Wundefined] [-Werror]
+
+
+CXXFLAGS="-O0 -U HAVE_EXECINFO_H -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128 "
+LDFLAGS="-O0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_FUNCTIONS=['main'] --bind"
+
+system_libs:WARNING: main() is in the input files, but "_main" is not in EXPORTED_FUNCTIONS, which means it may be eliminated as dead code. Export it if you want main() to run.
+em++: error: undefined exported function: "main" [-Wundefined] [-Werror]
+
+CXXFLAGS="-O0 -U HAVE_EXECINFO_H -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128 "
+LDFLAGS="-O0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_FUNCTIONS=['_main'] --bind"
+
+_main还是要有的
+
+CXXFLAGS="-O0 -U HAVE_EXECINFO_H -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128"
+LDFLAGS="-O0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_FUNCTIONS=['_popen','_main'] --bind"
+
+
+
+最终还是这样通过
+warning: undefined symbol: MAIN__ (referenced by top-level compiled C/C++ code)
+warning: undefined symbol: popen (referenced by top-level compiled C/C++ code)
+make[1]: Leaving directory '/opt/emscripten/kaldi-wasm/kaldi/src/online2bin'
+------------ Creating WASM module ------------
+
+
+
+
+-rwxrwxr-x  1 haoning02  admin  224208  2 20 11:43 Google Chrome
+(base) ➜  MacOS ./Google\ Chrome --js-flags="--experimental-wasm-simd"
+正在现有的浏览器会话中打开。
+(base) ➜  MacOS pwd
+/Applications/Google Chrome.app/Contents/MacOS
+
+
+
+
+这个可能不用了，需要一串msse的问题
+
+
+ou are setting onRuntimeInitialized on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js
+
+
+
+build_other_wasm.sh 如果把-O3改成-O0  ，难道kaldiJS.js 也是因为O0的原因才需要then的？
+
+
+resampleTo16bint.js:1659 Uncaught (in promise) RuntimeError: abort(You are setting onRuntimeInitialized on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js) at Error
+
+
+
+-O3就报
+kaldiJS.js:1951 wasm streaming compile failed: CompileError: WebAssembly.instantiateStreaming(): Compiling function #64 failed: Invalid opcode 0xfd (enable with --experimental-wasm-simd) @+13135
+这个错了
+
+
+
+webassembly的对象实例化这里需要再仔细看一下。。。。。。。。。。。。。。。。
+
+build_other_wasm.sh -O3的时候：
+
+DedicatedWorkerGlobalScope': #<Promise> could not be cloned.
+
+
+
+build_other_wasm.sh 需要改成-O0
+
+emcc -O0 -s WASM=1 -s MODULARIZE=1 -s ENVIRONMENT='worker' -s BUILD_AS_WORKER=1 \
+     -s EXTRA_EXPORTED_RUNTIME_METHODS="['ccall']" \
+     -s EXPORT_NAME='resampleTo16bint' \
+     --post-js audio-resampler/em_src/resampleTo16bint_post.js \
+     -I audio-resampler/src -o src/computations/resampleTo16bint.js \
+     audio-resampler/em_src/resampleTo16bint.c audio-resampler/src/*.c
+
+
+ 然后对应的
+kaldi-wasm/src/workers/resamplerWorker.js
+的最后几行注释掉，改写成promise的形式
+
+onmessage = (msg) => {
+  const { command } = msg.data;
+  const response = { command, ok: true };
+  if (command in helper) {
+    helper[command](msg)
+      .then((value) => { response.value = value; })
+      .catch((e) => {
+        response.ok = false;
+        response.value = e;
+      })
+      .finally(() => { postMessage(response); });
+  } else {
+    response.ok = false;
+    response.value = new Error(`Unknown command '${command}'`);
+    postMessage(response);
+  }
+//  if (command in helper){
+//      console.log("hao---------->resamplerWorker.js--->onmessage command:"+command)
+//      response.value = helper[command](msg);
+//  }
+//  else {
+//    response.ok = false;
+//    response.value = new Error(`Unknown command '${command}'`);
+//  }
+//  postMessage(response);
+};
+
+//resampleMod.onRuntimeInitialized = () => {
+//  console.log("hao---->resamplerWorker.js-->>>resampleMod.onRuntimeInitialized");
+//  resampleMod.init();
+//  resample = resampleMod.resampleTo16bint;
+//};
+
+
+
+
+
+就是改写promise的过程
+
+
+
+
+
+
+
+
+
+

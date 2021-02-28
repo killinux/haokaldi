@@ -857,6 +857,116 @@ LDFLAGS="-O1 -s DEMANGLE_SUPPORT=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --bind"
 
 
 
+猜测这个应该可以了
+下次尝试 prepare了  
+
+
+
+emsdk/upstream/emscripten/em++   -rdynamic -O3   online2-tcp-nnet3-decode-faster-reorganized.o ../online2/kaldi-online2.a ../ivector/kaldi-ivector.a ../nnet3/kaldi-nnet3.a ../chain/kaldi-chain.a ../nnet2/kaldi-nnet2.a ../cudamatrix/kaldi-cudamatrix.a ../decoder/kaldi-decoder.a ../lat/kaldi-lat.a ../fstext/kaldi-fstext.a ../hmm/kaldi-hmm.a ../feat/kaldi-feat.a ../transform/kaldi-transform.a ../gmm/kaldi-gmm.a ../tree/kaldi-tree.a ../util/kaldi-util.a ../matrix/kaldi-matrix.a ../base/kaldi-base.a   /opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib/libfst.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/lapack.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/libcblaswr.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CBLAS/lib/cblas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/f2c_BLAS-3.8.0/blas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/libf2c/libf2c.a -lm  -ldl  -o online2-tcp-nnet3-decode-faster-reorganized
+
+
+
+在prepare里修改：
+
+
+em++  $EM_OPTS  -O1   online2-tcp-nnet3-decode-faster-reorganized.o ../online2/kaldi-online2.a ../ivector/kaldi-ivector.a ../nnet3/kaldi-nnet3.a ../chain/kaldi-chain.a ../nnet2/kaldi-nnet2.a ../cudamatrix/kaldi-cudamatrix.a ../decoder/kaldi-decoder.a ../lat/kaldi-lat.a ../fstext/kaldi-fstext.a ../hmm/kaldi-hmm.a ../feat/kaldi-feat.a ../transform/kaldi-transform.a ../gmm/kaldi-gmm.a ../tree/kaldi-tree.a ../util/kaldi-util.a ../matrix/kaldi-matrix.a ../base/kaldi-base.a   /opt/emscripten/workspace/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib/libfst.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/lapack.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/libcblaswr.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/CBLAS/lib/cblas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/f2c_BLAS-3.8.0/blas.a /opt/emscripten/workspace/kaldi-wasm/clapack-wasm/libf2c/libf2c.a -lm  -ldl  -o  $WASM_NAME.js
+
+
+
+
+
+浏览器报错
+
+
+kaldiJS.js:1572 wasm streaming compile failed: CompileError: WebAssembly.instantiateStreaming(): Compiling function #249 failed: Invalid opcode 0xfd (enable with --experimental-wasm-simd) @+37315
+eval @ kaldiJS.js:1572
+Promise.then (async)
+eval @ kaldiJS.js:1569
+Promise.then (async)
+instantiateAsync @ kaldiJS.js:1567
+createWasm @ kaldiJS.js:1595
+eval @ kaldiJS.js:8428
+eval @ asrWorker.js?./node_modules/babel-loader/lib??ref--5:12
+./node_modules/babel-loader/lib/index.js?!./src/workers/asrWorker.js @ asrWorker.3e46b23366ad5d5ff4d6.js:97
+__webpack_require__ @ asrWorker.3e46b23366ad5d5ff4d6.js:20
+(anonymous) @ asrWorker.3e46b23366ad5d5ff4d6.js:84
+(anonymous) @ asrWorker.3e46b23366ad5d5ff4d6.js:87
+kaldiJS.js:1573 falling back to ArrayBuffer instantiation
+eval @ kaldiJS.js:1573
+Promise.then (async)
+eval @ kaldiJS.js:1569
+Promise.then (async)
+instantiateAsync @ kaldiJS.js:1567
+createWasm @ kaldiJS.js:1595
+eval @ kaldiJS.js:8428
+eval @ asrWorker.js?./node_modules/babel-loader/lib??ref--5:12
+./node_modules/babel-loader/lib/index.js?!./src/workers/asrWorker.js @ asrWorker.3e46b23366ad5d5ff4d6.js:97
+__webpack_require__ @ asrWorker.3e46b23366ad5d5ff4d6.js:20
+(anonymous) @ asrWorker.3e46b23366ad5d5ff4d6.js:84
+(anonymous) @ asrWorker.3e46b23366ad5d5ff4d6.js:87
+kaldiJS.js:1557 failed to asynchronously prepare wasm: CompileError: WebAssembly.instantiate(): Compiling function #249 failed: Invalid opcode 0xfd (enable with --experimental-wasm-simd) @+37315
+eval @ kaldiJS.js:1557
+Promise.then (async)
+instantiateArrayBuffer @ kaldiJS.js:1556
+eval @ kaldiJS.js:1574
+Promise.then (async)
+eval @ kaldiJS.js:1569
+Promise.then (async)
+instantiateAsync @ kaldiJS.js:1567
+createWasm @ kaldiJS.js:1595
+eval @ kaldiJS.js:8428
+eval @ asrWorker.js?./node_modules/babel-loader/lib??ref--5:12
+./node_modules/babel-loader/lib/index.js?!./src/workers/asrWorker.js @ asrWorker.3e46b23366ad5d5ff4d6.js:97
+__webpack_require__ @ asrWorker.3e46b23366ad5d5ff4d6.js:20
+(anonymous) @ asrWorker.3e46b23366ad5d5ff4d6.js:84
+(anonymous) @ asrWorker.3e46b23366ad5d5ff4d6.js:87
+kaldiJS.js:1444 CompileError: WebAssembly.instantiate(): Compiling function #249 failed: Invalid opcode 0xfd (enable with --experimental-wasm-simd) @+37315
+abort @ kaldiJS.js:1444
+eval @ kaldiJS.js:1558
+Promise.then (async)
+instantiateArrayBuffer @ kaldiJS.js:1556
+eval @ kaldiJS.js:1574
+Promise.then (async)
+eval @ kaldiJS.js:1569
+Promise.then (async)
+instantiateAsync @ kaldiJS.js:1567
+createWasm @ kaldiJS.js:1595
+eval @ kaldiJS.js:8428
+eval @ asrWorker.js?./node_modules/babel-loader/lib??ref--5:12
+./node_modules/babel-loader/lib/index.js?!./src/workers/asrWorker.js @ asrWorker.3e46b23366ad5d5ff4d6.js:97
+__webpack_require__ @ asrWorker.3e46b23366ad5d5ff4d6.js:20
+(anonymous) @ asrWorker.3e46b23366ad5d5ff4d6.js:84
+(anonymous) @ asrWorker.3e46b23366ad5d5ff4d6.js:87
+kaldiJS.js:1451 Uncaught (in promise) RuntimeError: abort(CompileError: WebAssembly.instantiate(): Compiling function #249 failed: Invalid opcode 0xfd (enable with --experimental-wasm-simd) @+37315). Build with -s ASSERTIONS=1 for more info.
+    at abort (webpack:///./src/computations/kaldiJS.js?:1451:15)
+    at eval (webpack:///./src/computations/kaldiJS.js?:1558:11)
+abort @ kaldiJS.js:1451
+eval @ kaldiJS.js:1558
+Promise.then (async)
+instantiateArrayBuffer @ kaldiJS.js:1556
+eval @ kaldiJS.js:1574
+Promise.then (async)
+eval @ kaldiJS.js:1569
+Promise.then (async)
+instantiateAsync @ kaldiJS.js:1567
+createWasm @ kaldiJS.js:1595
+eval @ kaldiJS.js:8428
+eval @ asrWorker.js?./node_modules/babel-loader/lib??ref--5:12
+./node_modules/babel-loader/lib/index.js?!./src/workers/asrWorker.js @ asrWorker.3e46b23366ad5d5ff4d6.js:97
+__webpack_require__ @ asrWorker.3e46b23366ad5d5ff4d6.js:20
+(anonymous) @ asrWorker.3e46b23366ad5d5ff4d6.js:84
+(anonymous) @ asrWorker.3e46b23366ad5d5ff4d6.js:87
+kaldiJS.js:1451 Uncaught (in promise) RuntimeError: abort(CompileError: WebAssembly.instantiate(): Compiling function #249 failed: Invalid opcode 0xfd (enable with --experimental-wasm-simd) @+37315). Build with -s ASSERTIONS=1 for more info.
+    at abort (webpack:///./src/computations/kaldiJS.js?:1451:15)
+    at eval (webpack:///./src/computations/kaldiJS.js?:1558:11)
+
+
+
+-s ASSERTIONS=1
+
+
+
+
 
 
 
@@ -870,6 +980,11 @@ LDFLAGS="-O1 -s DEMANGLE_SUPPORT=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --bind"
 npm config get registry
 
  npm config set registry https://registry.npmjs.org/
+
+
+c++filt  _ZNK5kaldi12ParseOptions7NumArgsEv
+
+
 
 
 
