@@ -113,6 +113,10 @@ echo "------------ Building Kaldi ------------"
 
 CXXFLAGS="-O0 -U HAVE_EXECINFO_H -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128"
 LDFLAGS="-O0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_FUNCTIONS=['_popen','_main'] --bind"
+或
+CXXFLAGS="-O0 -U HAVE_EXECINFO_H -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128"
+LDFLAGS="-O0 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_FUNCTIONS=['_main'] --bind"
+
 # this -O0 need then
 
 
@@ -155,6 +159,12 @@ cp $PROGRAM $PROGRAM.bc
 把这两行改成
 
 em++ -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128 -s EXPORTED_FUNCTIONS=['_popen','_main']  $EM_OPTS    online2-tcp-nnet3-decode-faster-reorganized.o ../online2/kaldi-online2.a ../ivector/kaldi-ivector.a ../nnet3/kaldi-nnet3.a ../chain/kaldi-chain.a ../nnet2/kaldi-nnet2.a ../cudamatrix/kaldi-cudamatrix.a ../decoder/kaldi-decoder.a ../lat/kaldi-lat.a ../fstext/kaldi-fstext.a ../hmm/kaldi-hmm.a ../feat/kaldi-feat.a ../transform/kaldi-transform.a ../gmm/kaldi-gmm.a ../tree/kaldi-tree.a ../util/kaldi-util.a ../matrix/kaldi-matrix.a ../base/kaldi-base.a   /opt/emscripten/kaldi-wasm/kaldi/tools/openfst-1.6.7/lib/libfst.a /opt/emscripten/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/lapack.a /opt/emscripten/kaldi-wasm/clapack-wasm/CLAPACK-3.2.1/libcblaswr.a /opt/emscripten/kaldi-wasm/clapack-wasm/CBLAS/lib/cblas.a /opt/emscripten/kaldi-wasm/clapack-wasm/f2c_BLAS-3.8.0/blas.a /opt/emscripten/kaldi-wasm/clapack-wasm/libf2c/libf2c.a -lm  -ldl  -o  $WASM_NAME.js
+
+或者相对位置
+
+em++ -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mavx  -msimd128 -s EXPORTED_FUNCTIONS=['_popen','_main']  $EM_OPTS    online2-tcp-nnet3-decode-faster-reorganized.o ../online2/kaldi-online2.a ../ivector/kaldi-ivector.a ../nnet3/kaldi-nnet3.a ../chain/kaldi-chain.a ../nnet2/kaldi-nnet2.a ../cudamatrix/kaldi-cudamatrix.a ../decoder/kaldi-decoder.a ../lat/kaldi-lat.a ../fstext/kaldi-fstext.a ../hmm/kaldi-hmm.a ../feat/kaldi-feat.a ../transform/kaldi-transform.a ../gmm/kaldi-gmm.a ../tree/kaldi-tree.a ../util/kaldi-util.a ../matrix/kaldi-matrix.a ../base/kaldi-base.a   ../../../kaldi/tools/openfst-1.6.7/lib/libfst.a ../../../clapack-wasm/CLAPACK-3.2.1/lapack.a ../../../clapack-wasm/CLAPACK-3.2.1/libcblaswr.a ../../../clapack-wasm/CBLAS/lib/cblas.a ../../../clapack-wasm/f2c_BLAS-3.8.0/blas.a ../../../clapack-wasm/libf2c/libf2c.a -lm  -ldl  -o  $WASM_NAME.js
+
+
 
 
 ------------ Creating WASM module ------------
@@ -388,10 +398,12 @@ function startASR() {
 
 
 
-#########检查通过
+#########检查编译通过
 
 
-ubuntu检查通过
+ubuntu20.04 检查通过
+
+
 
 
 
