@@ -68,6 +68,11 @@ make[2]: Nothing to be done for `install-data-am'.
 
 
 在tools下
+make 
+
+会编译openfst等
+
+
 cd ../src
 
 [code="java"]

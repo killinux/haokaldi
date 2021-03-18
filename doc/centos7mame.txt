@@ -1,0 +1,64 @@
+yum install automake -y
+
+
+emscripten 用的./emsdk activate 2.0.12
+
+2.0.14不行
+
+尝试 save state 和load state
+
+
+
+
+save state
+https://docs.mamedev.org/_files/MAME.pdf
+
+里面的设置
+
+tap 按钮调出设置
+
+F7 是load state
+left shift F7  是 save state
+
+
+通过搜索按钮名字
+
+grep -nR "Save State" *
+
+
+
+save state的代码在
+vim src/devices/machine/pdc.cpp
+
+324 void pdc_device::device_start()
+325 {
+326     /* Resolve callbacks */
+327     m_m68k_r_cb.resolve_safe(0);
+328     m_m68k_w_cb.resolve_safe();
+329
+330     /* Save States */
+331     save_item(NAME(reg_p0));
+332     save_item(NAME(reg_p1));
+333     save_item(NAME(reg_p2));
+334     save_item(NAME(reg_p3));
+335     save_item(NAME(reg_p4));
+336     save_item(NAME(reg_p5));
+337     save_item(NAME(reg_p6));
+338     save_item(NAME(reg_p7));
+339     save_item(NAME(reg_p21));
+340     save_item(NAME(reg_p38));
+341     save_item(NAME(fdd_68k_dma_address));
+342 }
+
+可能是这个，还有好几个，都得试验一下
+
+思考：如何debug？
+似乎加了-g4 也是wasm的debug，如何在浏览器里debug c？
+
+每次加个代码，重新编译太慢了
+
+
+
+
+思路：
+这里 暴露到 js里，然后，传到indexdb进而传到server就可以了

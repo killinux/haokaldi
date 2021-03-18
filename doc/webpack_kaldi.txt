@@ -1,0 +1,11 @@
+npx webpack serve
+
+https://www.webpackjs.com/configuration/configuration-languages/
+
+
+ ./online2-wav-nnet3-latgen-faster --do-endpointing=false --online=false --feature-type=fbank --fbank-config=/opt/emscripten/workspace/github/kaldi-wasm/dummy_serv/public/tmp/cvte/s5/conf --max-active=7000 --beam=15.0 --lattice-beam=6.0 --acoustic-scale=1.0 --word-symbol-table=/opt/emscripten/workspace/github/kaldi-wasm/dummy_serv/public/tmp/cvte/s5/exp/chain/tdnn/graph/words.txt /opt/emscripten/workspace/github/kaldi-wasm/dummy_serv/public/tmp/cvte/s5/exp/chain/tdnn/final.mdl /opt/emscripten/workspace/github/kaldi-wasm/dummy_serv/public/tmp/cvte/s5/exp/chain/tdnn/graph/HCLG.fst 'ark:echo utter1 utter1|' 'scp:echo utter1 /opt/emscripten/workspace/github/kaldi-wasm/dummy_serv/public/tmp/cvte/s5/data/wav/00030/2017_03_07_16.57.22_1175.wav|' ark:/dev/null
+
+
+
+
+ 

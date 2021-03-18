@@ -1,0 +1,47 @@
+
+
+
+
+echo 'c testvpn' > /var/run/xl2tpd/l2tp-control 
+
+route del default  
+route add default dev ppp0
+
+
+
+route add default dev eth0
+
+
+
+
+systemctl start ipsec
+xl2tpd -c /etc/xl2tpd/xl2tpd.conf
+ipsec verify
+
+ipsec auto --up L2TP-PSK
+
+
+
+
+
+route del -net 10.8.0.0/24
+
+
+ip route add 52.196.182.31 via 10.8.0.8 dev eth0
+
+ ip route add  10.8.0.8 via 192.168.3.99 dev ppp0
+
+
+
+ ip route add default via 192.168.3.99 dev ppp0
+
+iptables -t nat -A POSTROUTING -s 10.8.0.0/20  -o ppp0  -j MASQUERADE
+
+
+firewall-cmd --permanent --add-service=ipsec
+firewall-cmd --permanent --add-port=1701/udp
+ßfirewall-cmd --permanent --add-port=4500/udp
+firewall-cmd --permanent --add-masquerade
+firewall-cmd --reload
+
+不好使

@@ -1,0 +1,444 @@
+参考[url]https://haoningabc.iteye.com/admin/blogs/2517083[/url]
+
+[b]aws的redhat8搭建的xl2tp不能直接连ios了，不知道为什么，是8的问题还是aws的问题？
+目前用腾讯云的centos7作为xl2tp的中转：
+ios连centos7 ，centos7上搭建xl2tp的客户端和服务端，客户端连接aws的redhat8的xl2tp
+[/b]
+
+关键问题注意4:
+
+前提
+[code="java"]
+ios：192.168.2.128
+
+tx
+eth0:172.17.0.13
+ppp0:172.17.0.13 --->192.168.1.99
+ppp1:192.168.2.99---->192.168.2.128
+
+aws：
+外网 13.115.114.179 
+eth0:172.31.12.85 
+ppp0:192.168.1.99 --->172.17.0.13
+
+[/code]
+
+1.注意1400
+两个xl2tp
+[code="java"]
+ifconfig eth0 mtu 1400
+ifconfig ppp0 mtu 1400
+ifconfig lo mtu 1400
+[/code]
+所有可见的地方全1400
+ 1500似乎有时候有问题
+/etc/xl2tpd/xl2tpd.conf--->/etc/ppp/options.xl2tpd 设置mtu和mru为 1400
+
+
+
+2.注意 promisc ，
+tx和aws 两个 eth0 和两个 ppp0都需要
+ifconfig eth0 promisc
+ifconfig ppp0 promisc
+
+3.iptables
+
+[code="java"]
+tx ：
+iptables -t nat -A POSTROUTING -s 172.17.0.0/24  -o eth0  -j MASQUERADE
+iptables -t nat -A POSTROUTING -s 192.168.2.0/24  -o ppp0  -j MASQUERADE
+aws:
+iptables -t nat -A POSTROUTING -s 172.17.0.0/24  -o eth0  -j 
+ MASQUERADE
+[/code]
+注意这里 虽然aws的本机段式172.31.12.85
+这个操作是把ppp0 后面的 tx的ip段 172.17.0.13 做了snat
+snat原理参考：
+[url]https://blog.csdn.net/jk110333/article/details/8229828[/url]
+
+
+
+4.ip route
+
+客户端连 server的时候
+route del default 的时候就断网了（这个是关键问题）
+需要
+[code="java"]
+route add -host 13.115.114.179 dev eth0
+如果是加网段：
+route add -net  117.136.38.0 netmask 255.255.255.0 dev eth0
+[/code]
+
+用这个方式把固定需要接入tx的ios和远程ssh的客户端ip全加进来，否则后续都连不上了
+三个ip地方确认： 1. aws的server，2.ssh客户端ip 3.ios 客户端的ip
+
+
+5.系统 没有firewalld 有NetworkManager
+
+
+6.sysctl -p /etc/sysctl.conf
+
+7. xl2tpd 
+tx作为客户端，和服务端
+客户端需要配置lac testvpn ，具体的链接密码放在/etc/ppp/peers/aws.l2tpd
+注意，配置完systemctl start  xl2tpd可能启动不了，重启才行，是内核模块的问题？ 
+
+
+xl2tpd的配置 客户端需要
+[code="java"]
+[lac testvpn]
+lns =  13.115.114.179
+pppoptfile = /etc/ppp/peers/aws.l2tpd
+ppp debug = yes
+[global]
+force userspace = yes
+[/code]
+服务端需要
+[code="java"]
+[global]
+ipsec saref = no
+force userspace = yes
+[/code]
+
+
+具体设置：
+
+##################
+基本安装：
+[code="java"]
+dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm 
+dnf install screen
+dnf install libreswan xl2tpd  NetworkManager-l2tp -y  
+yum install iptables nc  -y
+telnet不能检测udp端口，用nc检测
+nc -vuz 13.115.114.179 4500
+[/code]
+##########################
+配置xl2tpd
+tx 客户端配置：
+vim /etc/xl2tpd/xl2tpd.conf
+[code="java"]
+[lac testvpn]
+;name = root
+;lns = 13.114.212.191
+;lns =  52.196.182.31
+lns =  13.115.114.179
+;pppoptfile = /etc/ppp/peers/testvpn.l2tpd
+pppoptfile = /etc/ppp/peers/aws.l2tpd
+ppp debug = yes
+
+[global]
+;ipsec saref = no
+force userspace = yes
+; listen-addr = 192.168.1.98
+;
+; requires openswan-2.5.18 or higher - Also does not yet work in combination
+; with kernel mode l2tp as present in linux 2.6.23+
+; ipsec saref = yes
+; Use refinfo of 22 if using an SAref kernel patch based on openswan 2.6.35 or
+;  when using any of the SAref kernel patches for kernels up to 2.6.35.
+; saref refinfo = 30
+;
+; force userspace = yes
+;
+; debug tunnel = yes
+
+[lns default]
+ip range = 192.168.2.128-192.168.2.254
+local ip = 192.168.2.99
+require chap = yes
+refuse pap = yes
+require authentication = yes
+name = LinuxVPNserver
+ppp debug = yes
+pppoptfile = /etc/ppp/options.xl2tpd
+length bit = yes
+
+[/code]
+
+tx作为客户端角色的自配置，主要配置用户名和密码；
+/etc/ppp/peers/aws.l2tpd
+[code="java"]
+remotename testvpn
+user "root"
+password "Haohao123"
+unit 0
+nodeflate
+nobsdcomp
+noauth
+persist
+nopcomp
+noaccomp
+maxfail 5
+debug
+[/code]
+
+tx作为服务端服务端角色的子配置，主要mtu和mru 设置1400
+/etc/ppp/options.xl2tpd
+[code="java"]
+ipcp-accept-local
+ipcp-accept-remote
+ms-dns  8.8.8.8
+noccp
+require-mschap-v2
+auth
+idle 1800
+mtu 1400
+mru 1400
+nodefaultroute
+debug
+proxyarp
+connect-delay 5000
+[/code]
+
+
+aws端的xltpd的配置：
+/etc/xl2tpd/xl2tpd.conf
+只加了
+[global]
+ipsec saref = no
+force userspace = yes
+
+内容为：
+[code="java"]
+[global]
+ipsec saref = no
+force userspace = yes
+; listen-addr = 192.168.1.98
+;
+; requires openswan-2.5.18 or higher - Also does not yet work in combination
+; with kernel mode l2tp as present in linux 2.6.23+
+; ipsec saref = yes
+; Use refinfo of 22 if using an SAref kernel patch based on openswan 2.6.35 or
+;  when using any of the SAref kernel patches for kernels up to 2.6.35.
+; saref refinfo = 30
+;
+; force userspace = yes
+;
+; debug tunnel = yes
+
+[lns default]
+ip range = 192.168.1.128-192.168.1.254
+local ip = 192.168.1.99
+require chap = yes
+refuse pap = yes
+require authentication = yes
+name = LinuxVPNserver
+ppp debug = yes
+pppoptfile = /etc/ppp/options.xl2tpd
+length bit = yes
+[/code]
+
+aws的xl2tpd服务端的子配置
+/etc/ppp/options.xl2tpd
+[code="java"]
+ipcp-accept-local
+ipcp-accept-remote
+ms-dns  8.8.8.8
+ms-dns  1.1.1.1
+# ms-dns  192.168.1.1
+# ms-dns  192.168.1.3
+# ms-wins 192.168.1.2
+# ms-wins 192.168.1.4
+noccp
+auth
+#obsolete: crtscts
+idle 1800
+mtu 1400
+mru 1400
+nodefaultroute
+debug
+#obsolete: lock
+proxyarp
+connect-delay 5000
+# To allow authentication against a Windows domain EXAMPLE, and require the
+# user to be in a group "VPN Users". Requires the samba-winbind package
+# require-mschap-v2
+# plugin winbind.so
+# ntlm_auth-helper '/usr/bin/ntlm_auth --helper-protocol=ntlm-server-1 --require-membership-of="EXAMPLE\\VPN Users"'
+# You need to join the domain on the server, for example using samba:
+# http://rootmanager.com/ubuntu-ipsec-l2tp-windows-domain-auth/setting-up-openswan-xl2tpd-with-native-windows-clients-lucid.html
+
+[/code]
+
+
+关于ipsec的配置：
+tx上 没有改/etc/ipsec.conf
+新增；/etc/ipsec.d/l2tp-ipsec.conf
+[code="java"]
+conn L2TP-PSK-NAT
+    rightsubnet=0.0.0.0/0
+    dpddelay=10
+    dpdtimeout=20
+    dpdaction=clear
+    encapsulation=yes
+    also=L2TP-PSK-noNAT
+conn L2TP-PSK-noNAT
+    authby=secret
+    pfs=no
+    auto=add
+    keyingtries=3
+    rekey=no
+    ikelifetime=8h
+    keylife=1h
+    type=transport
+    left=172.17.0.13
+    leftprotoport=17/1701
+    right=%any
+    rightprotoport=17/%any
+[/code]
+
+left为本机eth0的ip
+这里没有配置nexthop，不知道是否需要
+
+aws上的ipsec的配置：
+没有改/etc/ipsec.conf
+新增：
+/etc/ipsec.d/l2tp-ipsec.conf
+[code="java"]
+conn L2TP-PSK-NAT
+    rightsubnet=0.0.0.0/0
+    dpddelay=10
+    dpdtimeout=20
+    dpdaction=clear
+    forceencaps=yes
+    also=L2TP-PSK-noNAT
+conn L2TP-PSK-noNAT
+    authby=secret
+    pfs=no
+    auto=add
+    keyingtries=3
+    rekey=no
+    ikelifetime=8h
+    keylife=1h
+    type=transport
+    left=172.31.12.85
+    leftprotoport=17/1701
+    right=%any
+    rightprotoport=17/%any
+[/code]
+和tx类似：
+left为本机eth0的ip
+
+
+#####################
+密码文件：
+[code="java"]
+tx：
+/etc/ipsec.d/default.secrets
+
+:   PSK "Haohao123!"
+aws:
+
+: PSK "Haohao123"
+[/code]
+
+[code="java"]
+tx:
+cat /etc/ppp/chap-secrets
+root    *   haha123 *
+
+aws:
+cat /etc/ppp/chap-secrets
+# Secrets for authentication using CHAP
+# client	server	secret			IP addresses
+root	*	Haohao123
+[/code]
+
+
+
+这两个结合一下
+ipv4.sh:
+[code="java"]
+#!/bin/sh
+for each in /proc/sys/net/ipv4/conf/*
+do
+    echo 0 > $each/accept_redirects
+    echo 0 > $each/send_redirects
+done
+[/code]
+/etc/sysctl.conf
+[code="java"]
+net.ipv4.ip_forward = 1  
+net.ipv4.conf.all.accept_redirects = 0  
+net.ipv4.conf.all.rp_filter = 0  
+net.ipv4.conf.all.send_redirects = 0  
+net.ipv4.conf.default.accept_redirects = 0  
+net.ipv4.conf.default.rp_filter = 0  
+net.ipv4.conf.default.send_redirects = 0  
+net.ipv4.conf.eth0.accept_redirects = 0  
+net.ipv4.conf.eth0.rp_filter = 0  
+net.ipv4.conf.eth0.send_redirects = 0  
+net.ipv4.conf.lo.accept_redirects = 0  
+net.ipv4.conf.lo.rp_filter = 0  
+net.ipv4.conf.lo.send_redirects = 0
+
+
+sysctl -p /etc/sysctl.conf
+
+ipsec verify
+
+[/code]
+配置完xl2tpd 启动不了
+重启init 6
+试验一下 果然ok了
+[code="java"]
+nc -vuz 13.115.114.179 4500
+
+nc -vuz 13.115.114.179 1701
+
+
+route add -host 81.68.183.137 dev eth0   
+# route add -host 10.20.30.148 gw 10.20.30.40 
+
+
+route add -host 13.115.114.179 dev eth0
+[/code]
+最后 
+systemctl start ipsec
+ipsec verify 
+检查
+systemctl start xl2tpd
+
+
+
+tail -f /var/log/message
+
+
+ifconfig
+ip route检查
+
+
+客户端启动脚本：
+checkppp0.sh
+[code="java"]
+#!/bin/sh
+ppp0=`ifconfig |grep ppp0`
+if [ ! -n "$ppp0" ] ;then
+    a="will start vpn"
+    echo 'c testvpn' > /var/run/xl2tpd/l2tp-control
+    sleep 5
+    route del default
+    ip link set ppp0 up
+    /usr/sbin/route add default dev ppp0
+    touch /opt/c
+else
+    ip link set ppp0 up
+    /usr/sbin/route add default dev ppp0
+    a="noting to do"
+fi
+/usr/sbin/ifconfig ppp0
+
+echo $a
+#route add -net  117.136.38.0 netmask 255.255.255.0 dev eth0
+#ip route get 172.17.0.13
+[/code]
+
+
+
+
+
+
+
+
+
