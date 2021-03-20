@@ -81,6 +81,12 @@ osd_printf_info("haohao");
 
 -g改成-g4
 
+build/projects/sdl/mamepsikyo/gmake-asmjs/mame_psikyo.make
+
+emmake make SUBTARGET=psikyo  SOURCES=src/mame/drivers/psikyo.cpp CXXFLAGS=-g4
+
+
+
 
 
 待解决问题：
@@ -112,6 +118,8 @@ grep -nR m_save *
 
 
 src/emu/save.cpp
+save_error save_manager::write_file(emu_file &file)
+inline save_error save_manager::do_write
 
 
 
