@@ -62,3 +62,82 @@ vim src/devices/machine/pdc.cpp
 
 思路：
 这里 暴露到 js里，然后，传到indexdb进而传到server就可以了
+
+
+cd mame
+vim makefile
+DEBUG=1
+
+
+打印
+osd_printf_verbose("\n");
+
+osd_printf_info("haohao");
+
+ vim src/frontend/mame/ui/state.cpp
+
+
+3rdparty/genie/src/tools/gcc.lua
+
+-g改成-g4
+
+
+
+待解决问题：
+1.哪里能加-g4
+2.Save State
+3.怎么能编译得快一点
+4.
+
+
+
+########2 Save State
+src/frontend/mame/ui/state.cpp 
+"Save State"
+void menu_save_state::process_file
+machine().schedule_save
+
+
+src/emu/machine.cpp
+void running_machine::schedule_save
+set_saveload_filename
+
+
+
+void running_machine::handle_saveload()
+save_error saverr = (m_saveload_schedule == saveload_schedule::LOAD) ? m_save.read_file(file) : m_save.write_file(file);
+
+
+grep -nR m_save *
+
+
+src/emu/save.cpp
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
