@@ -90,11 +90,30 @@ emmake make SUBTARGET=psikyo  SOURCES=src/mame/drivers/psikyo.cpp CXXFLAGS=-g4
 
 
 待解决问题：
-1.哪里能加-g4
+1.哪里能加-g4 ,如何debug
+把src/emu下面都看看，有debug目录
 2.Save State
-3.怎么能编译得快一点
-4.
+3.怎么能编译得快一点，修改了mame，怎么能得到indexdb的变化？
+4.怎么能保存game状态， shift+F7是保存 F7是load
+是不是保存 indexdb就可以了 emularity/loader.js里
+FS.mkdir('/emulator');
+FS.mount(BFS, {root: '/'}, '/emulator');
+5.c++ ，bazel编译，template使用
 
+
+
+########1  如何debug
+https://emscripten.org/docs/porting/Debugging.html
+-g4 和-O3冲突，所以把O3都改成O0
+
+参考sed -i  "s/\-pthread//g" `grep -rl "\-pthread" .`
+
+sed -i  "s/ \-g / \-g4 --source-map-base http:\/\/121.5.59.140\/mame\/emularity\/ /g" `grep -rl " \-g " .`
+
+sed -i  "s/ \-O3 / \-O0 /g" `grep -rl " \-O3 " .`
+
+#emmake make SUBTARGET=psikyo  SOURCES=src/mame/drivers/psikyo.cpp CXXFLAGS="-g4 --source-map-base http://121.5.59.140/mame/emularity/ "
+emmake make SUBTARGET=psikyo  SOURCES=src/mame/drivers/psikyo.cpp CXXFLAGS="-g4 --source-map-base http://121.5.59.140/mame/mame/ "
 
 
 ########2 Save State
@@ -122,7 +141,27 @@ save_error save_manager::write_file(emu_file &file)
 inline save_error save_manager::do_write
 
 
+############4.
 
+
+
+######
+Compiling src/emu/debug/debugbuf.cpp...
+Compiling src/emu/debug/debugcmd.cpp...
+Compiling src/emu/debug/debugcon.cpp...
+Compiling src/emu/debug/debugcpu.cpp...
+Compiling src/emu/debug/debughlp.cpp...
+Compiling src/emu/debug/debugvw.cpp...
+Compiling src/emu/debug/dvbpoints.cpp...
+Compiling src/emu/debug/dvdisasm.cpp...
+Compiling src/emu/debug/dvmemory.cpp...
+Compiling src/emu/debug/dvstate.cpp...
+Compiling src/emu/debug/dvtext.cpp...
+Compiling src/emu/debug/dvwpoints.cpp...
+Compiling src/emu/debug/express.cpp...
+Compiling src/emu/debug/points.cpp...
+Compiling src/emu/debug/textbuf.cpp...
+Compiling src/emu/debugger.cpp...
 
 
 
