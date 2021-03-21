@@ -1,0 +1,24 @@
+
+
+安装：
+emmake make SUBTARGET=psikyo  SOURCES=src/mame/drivers/psikyo.cpp
+
+
+ /Users/haoning/Library/Caches/Homebrew/downloads
+
+ brew下载慢：
+ https://zhuanlan.zhihu.com/p/161386052
+
+
+./emsdk install 1.40.1
+如果ssl出错
+参考：
+
+ #命令行直接打开并编辑emsdk脚本
+ vim emsdk.py
+ 
+#然后在脚本import下插入两行代码
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
+
+
